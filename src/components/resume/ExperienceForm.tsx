@@ -20,9 +20,11 @@ import {
   ChevronDown,
   GripVertical,
   Briefcase,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   DndContext,
   closestCenter,
@@ -98,21 +100,28 @@ export function ExperienceForm() {
     updateCurrentResumeData({ experience: reordered });
   };
 
+  const inputClass = "rounded-xl border border-border/60 bg-white/50 dark:bg-white/5 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">{t('section.experience', language)}</h3>
-        <Button variant="outline" size="sm" onClick={addExperience}>
-          <Plus className="h-3 w-3 me-1" />
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={addExperience}
+          className="flex items-center gap-1 gradient-brand text-white rounded-xl px-3 py-1.5 text-xs font-medium"
+        >
+          <Plus className="h-3 w-3" />
           {t('experience.add', language)}
-        </Button>
+        </motion.button>
       </div>
 
       {experience.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           <Briefcase className="h-10 w-10 mx-auto mb-2 opacity-30" />
           <p className="text-sm">{t('common.noData', language)}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={addExperience}>
+          <Button variant="outline" size="sm" className="mt-3 rounded-xl" onClick={addExperience}>
             <Plus className="h-3 w-3 me-1" />
             {t('experience.add', language)}
           </Button>
@@ -134,6 +143,7 @@ export function ExperienceForm() {
                 isRtl={isRtl}
                 onUpdate={updateExperience}
                 onRemove={removeExperience}
+                inputClass={inputClass}
               />
             ))}
           </div>
@@ -149,12 +159,14 @@ function SortableExperienceItem({
   isRtl,
   onUpdate,
   onRemove,
+  inputClass,
 }: {
   exp: Experience;
   language: 'ar' | 'en';
   isRtl: boolean;
   onUpdate: (id: string, data: Partial<Experience>) => void;
   onRemove: (id: string) => void;
+  inputClass: string;
 }) {
   const [open, setOpen] = useState(!exp.company);
   const {
@@ -172,22 +184,31 @@ function SortableExperienceItem({
   };
 
   return (
-    <Card
+    <motion.div
       ref={setNodeRef}
       style={style}
-      className={cn('transition-shadow', isDragging && 'shadow-lg opacity-50 z-50')}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        'glass rounded-2xl overflow-hidden shadow-premium transition-shadow',
+        isDragging && 'shadow-glow opacity-50 z-50',
+        open && 'border-s-4 border-s-purple-500'
+      )}
     >
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger className="w-full">
-          <div className="flex items-center gap-2 p-3 cursor-pointer">
+          <div className="flex items-center gap-2 p-4 cursor-pointer">
             <div
               role="button"
               tabIndex={0}
-              className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-muted rounded"
+              className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-muted rounded-lg"
               {...attributes}
               {...listeners}
             >
               <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+              <Briefcase className="h-3.5 w-3.5" />
             </div>
             <div className="flex-1 text-start">
               <p className="text-sm font-medium truncate">
@@ -206,7 +227,7 @@ function SortableExperienceItem({
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="pt-0 pb-4 space-y-4">
+          <CardContent className="pt-0 pb-4 px-4 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs">{t('experience.jobTitle', language)}</Label>
@@ -215,7 +236,7 @@ function SortableExperienceItem({
                   onChange={(e) => onUpdate(exp.id, { jobTitle: e.target.value })}
                   placeholder={language === 'ar' ? 'مهندس برمجيات' : 'Software Engineer'}
                   dir={isRtl ? 'rtl' : 'ltr'}
-                  className="mt-1 h-9 text-sm"
+                  className={cn('mt-1', inputClass)}
                 />
               </div>
               <div>
@@ -225,29 +246,16 @@ function SortableExperienceItem({
                   onChange={(e) => onUpdate(exp.id, { company: e.target.value })}
                   placeholder={language === 'ar' ? 'شركة التقنية' : 'Tech Company'}
                   dir={isRtl ? 'rtl' : 'ltr'}
-                  className="mt-1 h-9 text-sm"
+                  className={cn('mt-1', inputClass)}
                 />
               </div>
               <div>
                 <Label className="text-xs">{t('experience.startDate', language)}</Label>
-                <Input
-                  type="month"
-                  value={exp.startDate}
-                  onChange={(e) => onUpdate(exp.id, { startDate: e.target.value })}
-                  className="mt-1 h-9 text-sm"
-                  dir="ltr"
-                />
+                <Input type="month" value={exp.startDate} onChange={(e) => onUpdate(exp.id, { startDate: e.target.value })} className={cn('mt-1', inputClass)} dir="ltr" />
               </div>
               <div>
                 <Label className="text-xs">{t('experience.endDate', language)}</Label>
-                <Input
-                  type="month"
-                  value={exp.endDate}
-                  onChange={(e) => onUpdate(exp.id, { endDate: e.target.value })}
-                  disabled={exp.current}
-                  className="mt-1 h-9 text-sm"
-                  dir="ltr"
-                />
+                <Input type="month" value={exp.endDate} onChange={(e) => onUpdate(exp.id, { endDate: e.target.value })} disabled={exp.current} className={cn('mt-1', inputClass)} dir="ltr" />
               </div>
               <div className="sm:col-span-2 flex items-center gap-2">
                 <Checkbox
@@ -272,7 +280,7 @@ function SortableExperienceItem({
                       : 'Designed and developed a CMS using React and Node.js...'
                   }
                   dir={isRtl ? 'rtl' : 'ltr'}
-                  className="mt-1 min-h-20 text-sm"
+                  className="mt-1 rounded-xl border border-border/60 bg-white/50 dark:bg-white/5 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-20"
                 />
               </div>
             </div>
@@ -280,7 +288,7 @@ function SortableExperienceItem({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-destructive hover:text-destructive"
+                className="text-destructive hover:text-destructive rounded-xl"
                 onClick={() => onRemove(exp.id)}
               >
                 <Trash2 className="h-3 w-3 me-1" />
@@ -290,6 +298,6 @@ function SortableExperienceItem({
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
-    </Card>
+    </motion.div>
   );
 }

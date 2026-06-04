@@ -6,11 +6,12 @@ import { Skill, generateId, SkillLevel, SKILL_LEVEL_LABELS } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+
+const inputClass = "rounded-xl border border-border/60 bg-white/50 dark:bg-white/5 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
 
 export function SkillsForm() {
   const language = useAppStore((s) => s.language);
@@ -55,8 +56,8 @@ export function SkillsForm() {
 
   const getLevelColor = (level: SkillLevel) => {
     switch (level) {
-      case 'expert': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
-      case 'advanced': return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300';
+      case 'expert': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+      case 'advanced': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
       case 'intermediate': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
       case 'beginner': return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
       default: return 'bg-muted text-muted-foreground';
@@ -64,25 +65,33 @@ export function SkillsForm() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Technical Skills */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">
-              {t('skills.technical', language)}
-            </CardTitle>
-            <Button variant="outline" size="sm" onClick={() => addSkill('technical')}>
-              <Plus className="h-3 w-3 me-1" />
-              {t('skills.add', language)}
-            </Button>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-2xl p-5 shadow-premium"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 text-white">
+              <Wrench className="h-4 w-4" />
+            </div>
+            <h3 className="font-semibold text-sm">{t('skills.technical', language)}</h3>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => addSkill('technical')}
+            className="flex items-center gap-1 gradient-brand text-white rounded-xl px-3 py-1.5 text-xs font-medium"
+          >
+            <Plus className="h-3 w-3" />
+            {t('skills.add', language)}
+          </motion.button>
+        </div>
+        <div className="space-y-3">
           {technicalSkills.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-3">
-              {t('common.noData', language)}
-            </p>
+            <p className="text-xs text-muted-foreground text-center py-3">{t('common.noData', language)}</p>
           )}
           {technicalSkills.map((skill) => (
             <SkillRow
@@ -96,27 +105,36 @@ export function SkillsForm() {
               onRemove={removeSkill}
             />
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </motion.div>
 
       {/* Soft Skills */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">
-              {t('skills.soft', language)}
-            </CardTitle>
-            <Button variant="outline" size="sm" onClick={() => addSkill('soft')}>
-              <Plus className="h-3 w-3 me-1" />
-              {t('skills.add', language)}
-            </Button>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="glass rounded-2xl p-5 shadow-premium"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+              <Wrench className="h-4 w-4" />
+            </div>
+            <h3 className="font-semibold text-sm">{t('skills.soft', language)}</h3>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => addSkill('soft')}
+            className="flex items-center gap-1 gradient-brand text-white rounded-xl px-3 py-1.5 text-xs font-medium"
+          >
+            <Plus className="h-3 w-3" />
+            {t('skills.add', language)}
+          </motion.button>
+        </div>
+        <div className="space-y-3">
           {softSkills.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-3">
-              {t('common.noData', language)}
-            </p>
+            <p className="text-xs text-muted-foreground text-center py-3">{t('common.noData', language)}</p>
           )}
           {softSkills.map((skill) => (
             <SkillRow
@@ -130,8 +148,8 @@ export function SkillsForm() {
               onRemove={removeSkill}
             />
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -161,7 +179,7 @@ function SkillRow({
           onChange={(e) => onUpdate(skill.id, { name: e.target.value })}
           placeholder={t('skills.name', language)}
           dir={isRtl ? 'rtl' : 'ltr'}
-          className="h-9 text-sm"
+          className={inputClass}
         />
       </div>
       <div className="w-32">
@@ -169,14 +187,10 @@ function SkillRow({
           value={skill.level}
           onValueChange={(v) => onUpdate(skill.id, { level: v as SkillLevel })}
         >
-          <SelectTrigger className="h-9 text-sm">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="h-10 text-sm rounded-xl">{<SelectValue />}</SelectTrigger>
           <SelectContent>
             {(Object.keys(levelLabels) as SkillLevel[]).map((key) => (
-              <SelectItem key={key} value={key}>
-                {levelLabels[key]}
-              </SelectItem>
+              <SelectItem key={key} value={key}>{levelLabels[key]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -184,7 +198,7 @@ function SkillRow({
       <Button
         variant="ghost"
         size="icon"
-        className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+        className="h-10 w-10 shrink-0 text-destructive hover:text-destructive rounded-xl"
         onClick={() => onRemove(skill.id)}
       >
         <Trash2 className="h-4 w-4" />

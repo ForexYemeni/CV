@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +22,17 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      {children}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={language}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
     </ThemeProvider>
   );
 }

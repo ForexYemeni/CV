@@ -7,6 +7,7 @@ import {
   ResumeData,
   getDefaultResumeData,
   generateId,
+  TEMPLATES,
 } from './types';
 
 interface AppState {
@@ -54,14 +55,14 @@ interface AppState {
   setAiLoading: (val: boolean) => void;
 
   // Init
-  createNewResume: (title?: string) => string;
+  createNewResume: (title?: string, template?: string) => string;
 }
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       // Navigation
-      currentView: 'dashboard',
+      currentView: 'landing',
       setCurrentView: (view) => set({ currentView: view }),
 
       // Language
@@ -149,16 +150,17 @@ export const useAppStore = create<AppState>()(
       setAiLoading: (val) => set({ aiLoading: val }),
 
       // Init
-      createNewResume: (title) => {
+      createNewResume: (title, template) => {
         const id = generateId();
         const lang = get().language;
+        const tmplInfo = TEMPLATES.find((t) => t.id === template);
         const newResume: Resume = {
           id,
           userId: 'local',
           title: title || (lang === 'ar' ? 'سيرة ذاتية جديدة' : 'New Resume'),
           slug: generateId(),
-          template: 'classic',
-          primaryColor: '#2563eb',
+          template: template || 'modern',
+          primaryColor: tmplInfo?.colors?.[0] || '#2563EB',
           fontFamily: 'inter',
           fontSize: 'medium',
           language: lang,

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { TEMPLATES } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -55,19 +55,27 @@ export function TemplatesView() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] p-4 md:p-6 lg:p-8">
+    <div className="min-h-[calc(100vh-4rem)] p-4 md:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <h1 className="text-2xl font-bold">{t('templates.title', language)}</h1>
           <p className="text-muted-foreground mt-1">
             {language === 'ar'
               ? 'اختر من بين مجموعة من القوالب الاحترافية'
               : 'Choose from a collection of professional templates'}
           </p>
-        </div>
+        </motion.div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col sm:flex-row gap-3"
+        >
           <div className="relative flex-1 max-w-sm">
             <Search
               className={cn(
@@ -78,111 +86,91 @@ export function TemplatesView() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={
-                language === 'ar' ? 'ابحث عن قالب...' : 'Search templates...'
-              }
-              className={cn(isRtl ? 'pr-10' : 'pl-10')}
+              placeholder={language === 'ar' ? 'ابحث عن قالب...' : 'Search templates...'}
+              className={cn('rounded-xl bg-white/50 dark:bg-white/5', isRtl ? 'pr-10' : 'pl-10')}
               dir={isRtl ? 'rtl' : 'ltr'}
             />
           </div>
           <div className="flex gap-1.5 flex-wrap">
             {categories.map((cat) => (
-              <Button
+              <motion.button
                 key={cat.id}
-                variant={selectedCategory === cat.id ? 'default' : 'outline'}
-                size="sm"
-                className={cn(
-                  selectedCategory === cat.id &&
-                    'bg-emerald-600 hover:bg-emerald-700'
-                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedCategory(cat.id)}
+                className={cn(
+                  'px-4 py-1.5 rounded-xl text-xs font-medium transition-all',
+                  selectedCategory === cat.id
+                    ? 'gradient-brand text-white shadow-md'
+                    : 'border border-border/50 hover:border-primary/30 text-muted-foreground hover:text-foreground'
+                )}
               >
                 {cat.label}
-              </Button>
+              </motion.button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Templates Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          {filteredTemplates.map((tmpl) => {
+          {filteredTemplates.map((tmpl, i) => {
             const activeResume = currentResumeId
               ? resumes.find((r) => r.id === currentResumeId)
               : null;
             const isActive = activeResume?.template === tmpl.id;
 
             return (
-              <Card
+              <motion.div
                 key={tmpl.id}
-                className={cn(
-                  'group cursor-pointer transition-all hover:shadow-lg overflow-hidden',
-                  isActive && 'ring-2 ring-emerald-500'
-                )}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                whileHover={{ y: -4 }}
                 onClick={() => handleSelectTemplate(tmpl.id)}
+                className={cn(
+                  'group cursor-pointer rounded-2xl overflow-hidden transition-all shadow-premium hover:shadow-glow',
+                  isActive && 'ring-2 ring-primary'
+                )}
               >
                 {/* Template Preview */}
                 <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden">
-                  {/* Simulated template layout */}
                   <div className="absolute inset-4 space-y-2">
-                    {/* Header */}
-                    <div
-                      className="h-6 rounded-sm"
-                      style={{ backgroundColor: tmpl.colors[0] + '20' }}
-                    />
-                    <div
-                      className="h-2 rounded-sm w-3/4"
-                      style={{ backgroundColor: tmpl.colors[0] + '30' }}
-                    />
+                    <div className="h-6 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '20' }} />
+                    <div className="h-2 rounded-sm w-3/4" style={{ backgroundColor: tmpl.colors[0] + '30' }} />
                     <div className="h-1.5 rounded-sm w-full bg-gray-200 dark:bg-gray-700" />
                     <div className="h-1.5 rounded-sm w-5/6 bg-gray-200 dark:bg-gray-700" />
-                    {/* Section */}
                     <div className="pt-2">
-                      <div
-                        className="h-2 rounded-sm w-1/2 mb-1.5"
-                        style={{ backgroundColor: tmpl.colors[0] + '40' }}
-                      />
+                      <div className="h-2 rounded-sm w-1/2 mb-1.5" style={{ backgroundColor: tmpl.colors[0] + '40' }} />
                       <div className="space-y-1">
                         <div className="h-1.5 rounded-sm w-full bg-gray-200 dark:bg-gray-700" />
                         <div className="h-1.5 rounded-sm w-4/5 bg-gray-200 dark:bg-gray-700" />
                         <div className="h-1.5 rounded-sm w-3/4 bg-gray-200 dark:bg-gray-700" />
                       </div>
                     </div>
-                    {/* Section */}
                     <div className="pt-1">
-                      <div
-                        className="h-2 rounded-sm w-1/2 mb-1.5"
-                        style={{ backgroundColor: tmpl.colors[0] + '40' }}
-                      />
+                      <div className="h-2 rounded-sm w-1/2 mb-1.5" style={{ backgroundColor: tmpl.colors[0] + '40' }} />
                       <div className="flex flex-wrap gap-1">
-                        <div
-                          className="h-4 w-12 rounded-sm"
-                          style={{ backgroundColor: tmpl.colors[0] + '15' }}
-                        />
-                        <div
-                          className="h-4 w-16 rounded-sm"
-                          style={{ backgroundColor: tmpl.colors[0] + '15' }}
-                        />
-                        <div
-                          className="h-4 w-10 rounded-sm"
-                          style={{ backgroundColor: tmpl.colors[0] + '15' }}
-                        />
+                        <div className="h-4 w-12 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
+                        <div className="h-4 w-16 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
+                        <div className="h-4 w-10 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
                       </div>
                     </div>
                   </div>
 
                   {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <Button
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-600 hover:bg-emerald-700"
+                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors flex items-center justify-center">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity gradient-brand text-white rounded-xl px-4 py-2 text-xs font-medium shadow-lg"
                     >
                       {t('templates.select', language)}
-                    </Button>
+                    </motion.button>
                   </div>
 
                   {/* Active indicator */}
                   {isActive && (
-                    <div className="absolute top-2 end-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <div className="absolute top-2 end-2 flex h-6 w-6 items-center justify-center rounded-full gradient-brand text-white">
                       <Check className="h-4 w-4" />
                     </div>
                   )}
@@ -192,7 +180,7 @@ export function TemplatesView() {
                     <div className="absolute top-2 start-2">
                       <Badge
                         variant="secondary"
-                        className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] gap-1"
+                        className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 text-[10px] gap-1 rounded-lg"
                       >
                         <Lock className="h-2.5 w-2.5" />
                         {t('templates.premium', language)}
@@ -202,7 +190,7 @@ export function TemplatesView() {
                 </div>
 
                 {/* Template Info */}
-                <CardContent className="p-3">
+                <div className="glass-strong p-3">
                   <p className="text-sm font-medium truncate">
                     {language === 'ar' ? tmpl.nameAr : tmpl.name}
                   </p>
@@ -213,13 +201,13 @@ export function TemplatesView() {
                     {tmpl.colors.slice(0, 3).map((color) => (
                       <div
                         key={color}
-                        className="w-4 h-4 rounded-full border border-gray-200 dark:border-gray-700"
+                        className="w-4 h-4 rounded-full border border-border/30"
                         style={{ backgroundColor: color }}
                       />
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </motion.div>
             );
           })}
         </div>

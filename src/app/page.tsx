@@ -1,18 +1,22 @@
 'use client';
 
 import { useAppStore } from '@/lib/store';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { DashboardView } from '@/components/resume/DashboardView';
 import { EditorView } from '@/components/resume/EditorView';
 import { TemplatesView } from '@/components/resume/TemplatesView';
 import { SettingsView } from '@/components/resume/SettingsView';
 import { AdminView } from '@/components/resume/AdminView';
+import { LandingPage } from '@/components/landing/LandingPage';
 
 export default function Home() {
   const currentView = useAppStore((s) => s.currentView);
 
   const renderView = () => {
     switch (currentView) {
+      case 'landing':
+        return <LandingPage />;
       case 'dashboard':
         return <DashboardView />;
       case 'editor':
@@ -24,14 +28,26 @@ export default function Home() {
       case 'admin':
         return <AdminView />;
       default:
-        return <DashboardView />;
+        return <LandingPage />;
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <AppHeader />
-      <main className="flex-1">{renderView()}</main>
+      {currentView !== 'landing' && <AppHeader />}
+      <main className="flex-1">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
+      </main>
     </div>
   );
 }

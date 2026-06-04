@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Collapsible,
@@ -17,6 +16,9 @@ import {
 import { Plus, Trash2, ChevronDown, FolderKanban, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+
+const inputClass = "rounded-xl border border-border/60 bg-white/50 dark:bg-white/5 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
 
 export function ProjectsForm() {
   const language = useAppStore((s) => s.language);
@@ -59,17 +61,22 @@ export function ProjectsForm() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">{t('section.projects', language)}</h3>
-        <Button variant="outline" size="sm" onClick={addProject}>
-          <Plus className="h-3 w-3 me-1" />
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={addProject}
+          className="flex items-center gap-1 gradient-brand text-white rounded-xl px-3 py-1.5 text-xs font-medium"
+        >
+          <Plus className="h-3 w-3" />
           {t('project.add', language)}
-        </Button>
+        </motion.button>
       </div>
 
       {projects.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           <FolderKanban className="h-10 w-10 mx-auto mb-2 opacity-30" />
           <p className="text-sm">{t('common.noData', language)}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={addProject}>
+          <Button variant="outline" size="sm" className="mt-3 rounded-xl" onClick={addProject}>
             <Plus className="h-3 w-3 me-1" />
             {t('project.add', language)}
           </Button>
@@ -123,10 +130,20 @@ function ProjectItem({
   };
 
   return (
-    <Card>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        'glass rounded-2xl overflow-hidden shadow-premium',
+        open && 'border-s-4 border-s-indigo-500'
+      )}
+    >
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger className="w-full">
-          <div className="flex items-center gap-2 p-3 cursor-pointer">
+          <div className="flex items-center gap-2 p-4 cursor-pointer">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+              <FolderKanban className="h-3.5 w-3.5" />
+            </div>
             <div className="flex-1 text-start">
               <p className="text-sm font-medium truncate">
                 {project.name || (language === 'ar' ? 'اسم المشروع' : 'Project Name')}
@@ -149,41 +166,19 @@ function ProjectItem({
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="pt-0 pb-4 space-y-4">
+          <div className="pt-0 pb-4 px-4 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs">{t('project.name', language)}</Label>
-                <Input
-                  value={project.name}
-                  onChange={(e) => onUpdate(project.id, { name: e.target.value })}
-                  placeholder={language === 'ar' ? 'نظام إدارة المهام' : 'Task Management System'}
-                  dir={isRtl ? 'rtl' : 'ltr'}
-                  className="mt-1 h-9 text-sm"
-                />
+                <Input value={project.name} onChange={(e) => onUpdate(project.id, { name: e.target.value })} placeholder={language === 'ar' ? 'نظام إدارة المهام' : 'Task Management System'} dir={isRtl ? 'rtl' : 'ltr'} className={cn('mt-1', inputClass)} />
               </div>
               <div>
                 <Label className="text-xs">{t('project.url', language)}</Label>
-                <Input
-                  value={project.url}
-                  onChange={(e) => onUpdate(project.id, { url: e.target.value })}
-                  placeholder="https://github.com/..."
-                  dir="ltr"
-                  className="mt-1 h-9 text-sm"
-                />
+                <Input value={project.url} onChange={(e) => onUpdate(project.id, { url: e.target.value })} placeholder="https://github.com/..." dir="ltr" className={cn('mt-1', inputClass)} />
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-xs">{t('project.description', language)}</Label>
-                <Textarea
-                  value={project.description}
-                  onChange={(e) => onUpdate(project.id, { description: e.target.value })}
-                  placeholder={
-                    language === 'ar'
-                      ? 'نظام متكامل لإدارة المشاريع مع لوحة تحكم تفاعلية...'
-                      : 'A comprehensive project management system with interactive dashboard...'
-                  }
-                  dir={isRtl ? 'rtl' : 'ltr'}
-                  className="mt-1 min-h-20 text-sm"
-                />
+                <Textarea value={project.description} onChange={(e) => onUpdate(project.id, { description: e.target.value })} placeholder={language === 'ar' ? 'نظام متكامل لإدارة المشاريع مع لوحة تحكم تفاعلية...' : 'A comprehensive project management system with interactive dashboard...'} dir={isRtl ? 'rtl' : 'ltr'} className="mt-1 rounded-xl border border-border/60 bg-white/50 dark:bg-white/5 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-20" />
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-xs">{t('project.technologies', language)}</Label>
@@ -197,11 +192,11 @@ function ProjectItem({
                         addTech();
                       }
                     }}
-                    placeholder={language === 'ar' ? 'React, Node.js...' : 'React, Node.js...'}
+                    placeholder="React, Node.js..."
                     dir="ltr"
-                    className="h-9 text-sm flex-1"
+                    className={cn('flex-1', inputClass)}
                   />
-                  <Button variant="outline" size="sm" onClick={addTech} className="h-9 px-3">
+                  <Button variant="outline" onClick={addTech} className="h-10 px-3 rounded-xl">
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
@@ -211,7 +206,7 @@ function ProjectItem({
                       <Badge
                         key={tech}
                         variant="secondary"
-                        className="text-xs gap-1 py-0.5 px-2"
+                        className="text-xs gap-1 py-0.5 px-2 rounded-lg"
                       >
                         {tech}
                         <button
@@ -227,19 +222,14 @@ function ProjectItem({
               </div>
             </div>
             <div className="flex justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={() => onRemove(project.id)}
-              >
+              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive rounded-xl" onClick={() => onRemove(project.id)}>
                 <Trash2 className="h-3 w-3 me-1" />
                 {t('project.remove', language)}
               </Button>
             </div>
-          </CardContent>
+          </div>
         </CollapsibleContent>
       </Collapsible>
-    </Card>
+    </motion.div>
   );
 }

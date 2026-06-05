@@ -217,7 +217,57 @@
   animation: shimmer 2s infinite;
 }
 
-/* Custom Scrollbar */
+/* Text gradient */
+.text-gradient {
+  background: linear-gradient(135deg, #2563EB 0%, #06B6D4 50%, #8B5CF6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Counter animation */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile touch scrolling fixes */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+html, body {
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  /* Prevent body scroll when editor is open */
+}
+
+/* Fix for Radix ScrollArea on mobile touch */
+[data-radix-scroll-area-viewport] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Native overflow scroll for mobile */
+.overflow-y-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Critical: ensure flex children can scroll */
+.flex-1.min-h-0 {
+  min-height: 0;
+}
+
+/* Touch scrollable areas */
+.custom-scrollbar {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -236,44 +286,4 @@
 }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.25);
-}
-
-/* Text gradient */
-.text-gradient {
-  background: linear-gradient(135deg, #2563EB 0%, #06B6D4 50%, #8B5CF6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Counter animation */
-@keyframes countUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Mobile touch scrolling fix */
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-
-/* Ensure proper scroll behavior on mobile */
-html, body {
-  overscroll-behavior: none;
-  -webkit-text-size-adjust: 100%;
-}
-
-/* Fix for Radix ScrollArea on mobile touch */
-[data-radix-scroll-area-viewport] {
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
-
-/* Mobile-friendly touch scrolling */
-.overflow-x-auto {
-  -webkit-overflow-scrolling: touch;
 }

@@ -4,12 +4,11 @@ import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { TEMPLATES, FONT_OPTIONS, FONT_SIZE_OPTIONS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   User, Briefcase, GraduationCap, Wrench, Award, Globe2, FolderKanban,
-  ArrowLeft, Eye, EyeOff, Download, Sparkles, Palette, LayoutTemplate,
-  Wand2, Lock, Check, MoreHorizontal, Settings2,
+  ArrowLeft, Eye, EyeOff, Download, Sparkles, LayoutTemplate,
+  Wand2, Lock, Check, Settings2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PersonalInfoForm } from './PersonalInfoForm';
@@ -68,7 +67,7 @@ export function EditorView() {
 
   if (!resume) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+      <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <p className="text-muted-foreground">{t('common.noData', language)}</p>
           <Button className="mt-4 gradient-brand text-white rounded-xl" onClick={() => setCurrentView('dashboard')}>
@@ -99,9 +98,9 @@ export function EditorView() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-full">
       {/* ========= Editor Toolbar - Mobile Compact ========= */}
-      <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg overflow-x-auto">
+      <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg overflow-x-auto scrollbar-none shrink-0">
         {/* Back */}
         <button
           onClick={() => setCurrentView('dashboard')}
@@ -118,7 +117,7 @@ export function EditorView() {
 
         <div className="flex-1" />
 
-        {/* Settings Popover (color, font, size - all in one) */}
+        {/* Settings Popover */}
         <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
           <PopoverTrigger asChild>
             <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs hover:bg-muted/50 transition-colors shrink-0">
@@ -126,7 +125,6 @@ export function EditorView() {
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-72 p-4 space-y-4" dir={isRtl ? 'rtl' : 'ltr'}>
-            {/* Colors */}
             <div>
               <p className="text-xs font-medium mb-2">{language === 'ar' ? 'اللون' : 'Color'}</p>
               <div className="flex flex-wrap gap-2">
@@ -143,7 +141,6 @@ export function EditorView() {
                 ))}
               </div>
             </div>
-            {/* Font */}
             <div>
               <p className="text-xs font-medium mb-2">{language === 'ar' ? 'الخط' : 'Font'}</p>
               <Select value={resume.fontFamily} onValueChange={(v) => updateCurrentResumeSettings({ fontFamily: v })}>
@@ -155,7 +152,6 @@ export function EditorView() {
                 </SelectContent>
               </Select>
             </div>
-            {/* Size */}
             <div>
               <p className="text-xs font-medium mb-2">{language === 'ar' ? 'الحجم' : 'Size'}</p>
               <Select value={resume.fontSize} onValueChange={(v) => updateCurrentResumeSettings({ fontSize: v })}>
@@ -223,17 +219,17 @@ export function EditorView() {
       </div>
 
       {/* ========= Editor Body ========= */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Form Panel */}
         <div
           className={cn(
-            'w-full md:w-[45%] overflow-hidden border-e flex flex-col',
+            'w-full md:w-[45%] flex flex-col min-h-0 border-e',
             showPreview ? 'hidden md:flex' : 'flex'
           )}
         >
-          {/* Section tabs - compact on mobile */}
-          <div className="border-b px-1.5 sm:px-2 py-1.5 sm:py-2 bg-muted/30">
-            <div className="flex gap-0.5 sm:gap-1 overflow-x-auto scrollbar-none">
+          {/* Section tabs */}
+          <div className="border-b px-1.5 sm:px-2 py-1.5 sm:py-2 bg-muted/30 shrink-0">
+            <div className="flex gap-0.5 sm:gap-1 overflow-x-auto scrollbar-none -webkit-overflow-scrolling-touch">
               {SECTIONS.map((section) => (
                 <button
                   key={section.id}
@@ -252,7 +248,8 @@ export function EditorView() {
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
+          {/* Form content - using native scroll for mobile compatibility */}
+          <div className="flex-1 overflow-y-auto -webkit-overflow-scrolling-touch overscroll-y-contain custom-scrollbar">
             <div className="p-3 sm:p-4 md:p-6 max-w-3xl mx-auto">
               {/* Section Header */}
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
@@ -284,14 +281,14 @@ export function EditorView() {
               {activeSection === 'languages' && <LanguagesForm />}
               {activeSection === 'projects' && <ProjectsForm />}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Preview Panel */}
         <div
           className={cn(
-            'w-full md:w-[55%] bg-muted/20 overflow-hidden',
-            !showPreview ? 'hidden md:block' : 'block'
+            'w-full md:w-[55%] bg-muted/20 flex flex-col min-h-0',
+            !showPreview ? 'hidden md:flex' : 'flex'
           )}
         >
           <ResumePreview />
@@ -299,7 +296,7 @@ export function EditorView() {
       </div>
 
       {/* Bottom bar */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-1 sm:py-1.5 border-t bg-muted/20 text-[10px] sm:text-xs text-muted-foreground">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-1 sm:py-1.5 border-t bg-muted/20 text-[10px] sm:text-xs text-muted-foreground shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 animate-pulse" />
           <span>{language === 'ar' ? 'حفظ تلقائي' : 'Auto-saved'}</span>
@@ -356,7 +353,7 @@ function TemplateSelectorDialog({ open, onOpenChange, language, currentTemplate,
             {language === 'ar' ? 'اختر قالب' : 'Choose Template'}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] pr-2">
+        <div className="overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
           <div className="space-y-6 py-2">
             {categories.map((category) => (
               <div key={category}>
@@ -403,7 +400,7 @@ function TemplateSelectorDialog({ open, onOpenChange, language, currentTemplate,
               </div>
             ))}
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

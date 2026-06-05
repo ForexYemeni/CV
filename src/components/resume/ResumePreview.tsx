@@ -5,7 +5,6 @@ import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ZoomIn, ZoomOut, Maximize, Minimize, Eye, FileText,
 } from 'lucide-react';
@@ -56,15 +55,15 @@ export function ResumePreview() {
 
   return (
     <div className={`flex flex-col h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
-      {/* Preview toolbar - compact on mobile */}
-      <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg">
+      {/* Preview toolbar */}
+      <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shrink-0">
         <span className="text-[10px] sm:text-xs font-medium text-muted-foreground hidden sm:inline">
           {t('preview.title', language)}
         </span>
 
         <div className="flex-1 sm:hidden" />
 
-        {/* View mode toggle - compact */}
+        {/* View mode toggle */}
         <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-md p-0.5">
           <button
             onClick={() => setViewMode('professional')}
@@ -76,7 +75,7 @@ export function ResumePreview() {
             )}
           >
             <Eye className="h-3 w-3" />
-            <span className="hidden xs:inline">{language === 'ar' ? 'احترافي' : 'Pro'}</span>
+            <span>{language === 'ar' ? 'احترافي' : 'Pro'}</span>
           </button>
           <button
             onClick={() => setViewMode('document')}
@@ -88,13 +87,13 @@ export function ResumePreview() {
             )}
           >
             <FileText className="h-3 w-3" />
-            <span className="hidden xs:inline">{language === 'ar' ? 'مستند' : 'Doc'}</span>
+            <span>{language === 'ar' ? 'مستند' : 'Doc'}</span>
           </button>
         </div>
 
         <div className="flex-1 hidden sm:block" />
 
-        {/* Zoom controls - hide on very small screens */}
+        {/* Zoom controls */}
         <div className="hidden sm:flex items-center gap-1">
           <button onClick={zoomOut} className="flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted/50 transition-colors">
             <ZoomOut className="h-3.5 w-3.5" />
@@ -123,8 +122,8 @@ export function ResumePreview() {
         )}
       </div>
 
-      {/* Preview content */}
-      <ScrollArea className="flex-1">
+      {/* Preview content - using native scroll for mobile compatibility */}
+      <div className="flex-1 overflow-y-auto -webkit-overflow-scrolling-touch overscroll-y-contain custom-scrollbar min-h-0">
         <AnimatePresence mode="wait">
           {viewMode === 'professional' ? (
             <motion.div
@@ -167,7 +166,7 @@ export function ResumePreview() {
             </motion.div>
           )}
         </AnimatePresence>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

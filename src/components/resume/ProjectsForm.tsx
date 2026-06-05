@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
+import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { Project, generateId } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -22,10 +22,8 @@ const inputClass = "rounded-xl border border-border/60 bg-white/50 dark:bg-white
 
 export function ProjectsForm() {
   const language = useAppStore((s) => s.language);
-  const getCurrentResume = useAppStore((s) => s.getCurrentResume);
+  const resume = useCurrentResume();
   const updateCurrentResumeData = useAppStore((s) => s.updateCurrentResumeData);
-
-  const resume = getCurrentResume();
   const isRtl = language === 'ar';
 
   if (!resume) return null;

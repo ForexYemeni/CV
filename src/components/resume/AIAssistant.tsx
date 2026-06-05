@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import {
   Dialog,
@@ -59,7 +59,7 @@ const AI_ACTIONS = [
 
 export function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
   const language = useAppStore((s) => s.language);
-  const getCurrentResume = useAppStore((s) => s.getCurrentResume);
+  const resume = useCurrentResume();
   const updateCurrentResumeData = useAppStore((s) => s.updateCurrentResumeData);
   const aiLoading = useAppStore((s) => s.aiLoading);
   const setAiLoading = useAppStore((s) => s.setAiLoading);
@@ -68,8 +68,6 @@ export function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
   const [copied, setCopied] = useState(false);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const isRtl = language === 'ar';
-
-  const resume = getCurrentResume();
 
   const handleAction = async (actionId: string) => {
     if (!resume) return;

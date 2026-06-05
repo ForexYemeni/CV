@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
+import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { TEMPLATES, FONT_OPTIONS, FONT_SIZE_OPTIONS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -56,15 +56,13 @@ export function EditorView() {
   const setActiveSection = useAppStore((s) => s.setActiveSection);
   const showPreview = useAppStore((s) => s.showPreview);
   const setShowPreview = useAppStore((s) => s.setShowPreview);
-  const getCurrentResume = useAppStore((s) => s.getCurrentResume);
+  const resume = useCurrentResume();
   const updateCurrentResumeSettings = useAppStore((s) => s.updateCurrentResumeSettings);
 
   const [exportOpen, setExportOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
   const isRtl = language === 'ar';
-
-  const resume = getCurrentResume();
 
   if (!resume) {
     return (

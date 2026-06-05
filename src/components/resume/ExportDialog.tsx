@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { ExportFormat, PaperSize } from '@/lib/types';
 import {
@@ -27,15 +27,13 @@ interface ExportDialogProps {
 
 export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const language = useAppStore((s) => s.language);
-  const getCurrentResume = useAppStore((s) => s.getCurrentResume);
+  const resume = useCurrentResume();
 
   const [format, setFormat] = useState<ExportFormat>('pdf');
   const [paperSize, setPaperSize] = useState<PaperSize>('a4');
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const isRtl = language === 'ar';
-
-  const resume = getCurrentResume();
 
   const handleExport = async () => {
     if (!resume) return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
+import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { TEMPLATES } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,10 +11,8 @@ import { cn } from '@/lib/utils';
 
 export function TemplateSelector() {
   const language = useAppStore((s) => s.language);
-  const getCurrentResume = useAppStore((s) => s.getCurrentResume);
+  const resume = useCurrentResume();
   const updateCurrentResumeSettings = useAppStore((s) => s.updateCurrentResumeSettings);
-
-  const resume = getCurrentResume();
   const isRtl = language === 'ar';
 
   if (!resume) return null;

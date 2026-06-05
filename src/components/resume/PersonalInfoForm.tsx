@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { generateId } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -15,10 +15,8 @@ import { cn } from '@/lib/utils';
 
 export function PersonalInfoForm() {
   const language = useAppStore((s) => s.language);
-  const getCurrentResume = useAppStore((s) => s.getCurrentResume);
+  const resume = useCurrentResume();
   const updateCurrentResumeData = useAppStore((s) => s.updateCurrentResumeData);
-
-  const resume = getCurrentResume();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isRtl = language === 'ar';
 

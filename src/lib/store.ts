@@ -58,6 +58,14 @@ interface AppState {
   createNewResume: (title?: string, template?: string) => string;
 }
 
+/** Reactive hook that returns the current resume and triggers re-renders on data changes */
+export function useCurrentResume(): Resume | null {
+  return useAppStore((s) => {
+    if (!s.currentResumeId) return null;
+    return s.resumes.find((r) => r.id === s.currentResumeId) ?? null;
+  });
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({

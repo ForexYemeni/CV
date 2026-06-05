@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
+import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { Experience, generateId } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 export function ExperienceForm() {
   const language = useAppStore((s) => s.language);
-  const getCurrentResume = useAppStore((s) => s.getCurrentResume);
+  const resume = useCurrentResume();
   const updateCurrentResumeData = useAppStore((s) => s.updateCurrentResumeData);
 
   const sensors = useSensors(
@@ -53,7 +53,6 @@ export function ExperienceForm() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const resume = getCurrentResume();
   const isRtl = language === 'ar';
 
   if (!resume) return null;

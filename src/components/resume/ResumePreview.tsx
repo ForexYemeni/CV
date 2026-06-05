@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
+import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -57,17 +57,16 @@ const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
   healthcare: HealthcareTemplate,
   marketing: MarketingTemplate,
   finance: FinanceTemplate,
+  manager: CorporateTemplate, // Manager uses Corporate layout as base
 };
 
 export function ResumePreview() {
   const language = useAppStore((s) => s.language);
-  const getCurrentResume = useAppStore((s) => s.getCurrentResume);
+  const resume = useCurrentResume();
   const previewZoom = useAppStore((s) => s.previewZoom);
   const setPreviewZoom = useAppStore((s) => s.setPreviewZoom);
   const isFullscreen = useAppStore((s) => s.isFullscreen);
   const setIsFullscreen = useAppStore((s) => s.setIsFullscreen);
-
-  const resume = getCurrentResume();
 
   if (!resume) {
     return (

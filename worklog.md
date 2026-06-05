@@ -43,3 +43,21 @@ Stage Summary:
 - Split-screen editor with AI assistant per section
 - Full bilingual support (AR/EN) with RTL
 - All bugs fixed, lint passes, app running successfully
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix Resume Builder - templates not showing and can't add real resume data
+
+Work Log:
+- Identified root cause: `getCurrentResume` function was used as a Zustand selector `useAppStore((s) => s.getCurrentResume)` which never triggers re-renders because the function reference never changes
+- Created `useCurrentResume()` reactive hook that directly selects resume data from the store
+- Updated 11 components to use the new hook: ResumePreview, EditorView, PersonalInfoForm, ExperienceForm, EducationForm, SkillsForm, CertificationsForm, LanguagesForm, ProjectsForm, ExportDialog, TemplateSelector, AIAssistant
+- Added missing `manager` template mapping in TEMPLATE_MAP (uses CorporateTemplate as base)
+- Verified build succeeds with no errors
+- Browser tested all functionality: landing page, editor, form input, preview updates, templates view, language toggle
+
+Stage Summary:
+- Root cause was a Zustand reactivity bug - the `getCurrentResume` function selector never triggered re-renders
+- All 20 templates now display correctly in the templates view
+- Resume data entry (name, experience, etc.) now updates the preview in real-time
+- The application is fully functional with all features working

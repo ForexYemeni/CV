@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { HydrationGuard } from './HydrationGuard';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const language = useAppStore((s) => s.language);
@@ -16,23 +16,15 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={language}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-        >
-          {children}
-        </motion.div>
-      </AnimatePresence>
-    </ThemeProvider>
+    <HydrationGuard>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        {children}
+      </ThemeProvider>
+    </HydrationGuard>
   );
 }

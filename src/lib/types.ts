@@ -217,3 +217,106 @@ export const FONT_SIZE_OPTIONS = [
   { value: 'medium', label: 'Medium', labelAr: 'متوسط' },
   { value: 'large', label: 'Large', labelAr: 'كبير' },
 ];
+
+/** Returns sample resume data for demo/preview purposes */
+export function getSampleResumeData(lang: Language = 'ar'): ResumeData {
+  const isAr = lang === 'ar';
+  return {
+    personalInfo: {
+      photo: '',
+      fullName: isAr ? 'أحمد محمد الخالدي' : 'Alex Johnson',
+      jobTitle: isAr ? 'مهندس برمجيات أول' : 'Senior Software Engineer',
+      summary: isAr
+        ? 'مهندس برمجيات بخبرة تزيد عن 8 سنوات في تطوير تطبيقات الويب والموبايل. متخصص في تقنيات React و Node.js مع سجل حافل في قيادة فرق تطوير وتسليم مشاريع عالية الجودة. شغوف بالابتكار والتقنيات الحديثة.'
+        : 'Experienced software engineer with 8+ years in web and mobile application development. Specialized in React and Node.js with a proven track record of leading development teams and delivering high-quality projects. Passionate about innovation and cutting-edge technologies.',
+      email: isAr ? 'ahmed@example.com' : 'alex@example.com',
+      phone: '+966 55 123 4567',
+      country: isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia',
+      city: isAr ? 'الرياض' : 'Riyadh',
+      address: isAr ? 'حي العليا، شارع الملك فهد' : 'Olaya District, King Fahd Road',
+      website: 'https://ahmed-dev.com',
+      linkedin: 'linkedin.com/in/ahmed-khalidi',
+      github: 'github.com/ahmed-khalidi',
+      otherLinks: [],
+    },
+    experience: [
+      {
+        id: generateId(),
+        company: isAr ? 'شركة تقنية المستقبل' : 'FutureTech Solutions',
+        jobTitle: isAr ? 'مهندس برمجيات أول' : 'Senior Software Engineer',
+        startDate: '2021-01',
+        endDate: '',
+        current: true,
+        description: isAr
+          ? 'قيادة فريق تطوير مكون من 6 مطورين لبناء منصة SaaS\nتصميم وتنفيذ معمارية Microservices باستخدام Node.js و Docker\nتحسين أداء التطبيق بنسبة 40% من خلال تحسين قواعد البيانات\nتطوير واجهات برمجة تطبيقات RESTful و GraphQL'
+          : 'Led a team of 6 developers to build a SaaS platform\nDesigned and implemented Microservices architecture using Node.js and Docker\nImproved application performance by 40% through database optimization\nDeveloped RESTful APIs and GraphQL endpoints',
+        order: 0,
+      },
+      {
+        id: generateId(),
+        company: isAr ? 'شركة الابتكار الرقمي' : 'Digital Innovation Co.',
+        jobTitle: isAr ? 'مطور واجهات أمامية' : 'Frontend Developer',
+        startDate: '2018-06',
+        endDate: '2020-12',
+        current: false,
+        description: isAr
+          ? 'تطوير تطبيقات ويب تفاعلية باستخدام React و TypeScript\nبناء مكتبة مكونات UI قابلة لإعادة الاستخدام\nالتعاون مع فريق التصميم لتنفيذ تصاميم متجاوبة\nتطبيق أفضل ممارسات اختبار الكود'
+          : 'Developed interactive web applications using React and TypeScript\nBuilt reusable UI component library\nCollaborated with design team to implement responsive designs\nImplemented code testing best practices',
+        order: 1,
+      },
+    ],
+    education: [
+      {
+        id: generateId(),
+        institution: isAr ? 'جامعة الملك سعود' : 'King Saud University',
+        major: isAr ? 'هندسة البرمجيات' : 'Software Engineering',
+        degree: 'bachelor',
+        startDate: '2014',
+        endDate: '2018',
+        description: isAr ? 'تخرج بمرتبة الشرف الأولى، معدل 4.8/5.0' : 'Graduated with First Class Honors, GPA 4.8/5.0',
+        order: 0,
+      },
+    ],
+    skills: [
+      { id: generateId(), name: 'React / Next.js', level: 'expert', category: 'technical' },
+      { id: generateId(), name: 'TypeScript', level: 'expert', category: 'technical' },
+      { id: generateId(), name: 'Node.js', level: 'advanced', category: 'technical' },
+      { id: generateId(), name: 'Python', level: 'intermediate', category: 'technical' },
+      { id: generateId(), name: 'Docker / K8s', level: 'advanced', category: 'technical' },
+      { id: generateId(), name: 'PostgreSQL', level: 'advanced', category: 'technical' },
+      { id: generateId(), name: 'MongoDB', level: 'advanced', category: 'technical' },
+      { id: generateId(), name: 'AWS', level: 'intermediate', category: 'technical' },
+      { id: generateId(), name: isAr ? 'قيادة الفرق' : 'Team Leadership', level: 'advanced', category: 'soft' },
+      { id: generateId(), name: isAr ? 'التواصل الفعال' : 'Communication', level: 'expert', category: 'soft' },
+    ],
+    certifications: [
+      { id: generateId(), name: 'AWS Solutions Architect', issuer: 'Amazon Web Services', date: '2022', description: '' },
+      { id: generateId(), name: 'Google Cloud Professional', issuer: 'Google', date: '2021', description: '' },
+    ],
+    languages: [
+      { id: generateId(), name: isAr ? 'العربية' : 'Arabic', level: 'native' },
+      { id: generateId(), name: isAr ? 'الإنجليزية' : 'English', level: 'fluent' },
+    ],
+    projects: [
+      {
+        id: generateId(),
+        name: isAr ? 'منصة إدارة المشاريع' : 'Project Management Platform',
+        description: isAr
+          ? 'منصة SaaS لإدارة المشاريع مع لوحات Kanban وتتبع الوقت والتقارير'
+          : 'SaaS platform for project management with Kanban boards, time tracking, and reports',
+        url: 'https://github.com/example/project-mgmt',
+        technologies: ['React', 'Node.js', 'PostgreSQL', 'Docker'],
+      },
+      {
+        id: generateId(),
+        name: isAr ? 'تطبيق التوظيف الذكي' : 'Smart Recruitment App',
+        description: isAr
+          ? 'تطبيق توظيف مدعوم بالذكاء الاصطناعي لمطابقة المرشحين مع الوظائف'
+          : 'AI-powered recruitment app for matching candidates with job openings',
+        url: 'https://github.com/example/smart-recruit',
+        technologies: ['Next.js', 'Python', 'TensorFlow', 'MongoDB'],
+      },
+    ],
+    sections: DEFAULT_SECTIONS.map(s => ({ ...s })),
+  };
+}

@@ -22,6 +22,10 @@ import {
   Palette,
   Save,
   Check,
+  FileUser,
+  Wand2,
+  LayoutTemplate,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PersonalInfoForm } from './PersonalInfoForm';
@@ -35,8 +39,14 @@ import { ResumePreview } from './ResumePreview';
 import { TemplateSelector } from './TemplateSelector';
 import { ExportDialog } from './ExportDialog';
 import { AIAssistant } from './AIAssistant';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const SECTIONS = [
   { id: 'personalInfo', icon: User, gradient: 'from-blue-500 to-cyan-500' },
@@ -62,7 +72,14 @@ export function EditorView() {
   const [exportOpen, setExportOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const fillWithSampleData = useAppStore((s) => s.fillWithSampleData);
   const isRtl = language === 'ar';
+
+  const hasData = useMemo(() => {
+    if (!resume) return false;
+    const d = resume.data;
+    return !!(d.personalInfo.fullName || d.experience.length > 0 || d.education.length > 0 || d.skills.length > 0);
+  }, [resume]);
 
   if (!resume) {
     return (
@@ -176,6 +193,30 @@ export function EditorView() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Template selector */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setTemplateOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-muted/50 transition-colors"
+        >
+          <LayoutTemplate className="h-4 w-4" />
+          <span className="hidden lg:inline">{language === 'ar' ? 'القوالب' : 'Templates'}</span>
+        </motion.button>
+
+        {/* Fill with sample data */}
+        {!hasData && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={fillWithSampleData}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+          >
+            <Wand2 className="h-4 w-4" />
+            <span className="hidden lg:inline">{language === 'ar' ? 'تعبة تلقائية' : 'Auto Fill'}</span>
+          </motion.button>
+        )}
 
         {/* AI button */}
         <motion.button
@@ -307,6 +348,141 @@ export function EditorView() {
       {/* Dialogs */}
       <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
       <AIAssistant open={aiOpen} onOpenChange={setAiOpen} />
+
+      {/* Template Selector Dialog */}
+      {templateOpen && (
+        <TemplateSelectorDialog
+          open={templateOpen}
+          onOpenChange={setTemplateOpen}
+          language={language}
+          currentTemplate={resume.template}
+          onSelect={(templateId) => {
+            const tmplInfo = TEMPLATES.find((t) => t.id === templateId);
+            updateCurrentResumeSettings({
+              template: templateId,
+              primaryColor: tmplInfo?.colors?.[0] || resume.primaryColor,
+            });
+            setTemplateOpen(false);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/** Template Selector Dialog for choosing templates from within the editor */
+function TemplateSelectorDialog({
+  open,
+  onOpenChange,
+  language,
+  currentTemplate,
+  onSelect,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  language: 'ar' | 'en';
+  currentTemplate: string;
+  onSelect: (templateId: string) => void;
+}) {
+  const categories = [...new Set(TEMPLATES.map((t) => t.category))];
+  const categoryLabels: Record<string, string> = {
+    professional: language === 'ar' ? 'احترافي' : 'Professional',
+    creative: language === 'ar' ? 'إبداعي' : 'Creative',
+    minimal: language === 'ar' ? 'بسيط' : 'Minimal',
+    industry: language === 'ar' ? 'صناعي' : 'Industry',
+    academic: language === 'ar' ? 'أكاديمي' : 'Academic',
+    premium: language === 'ar' ? 'فاخر' : 'Premium',
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] glass-strong border-border/30" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-brand text-white">
+              <LayoutTemplate className="h-5 w-5" />
+            </div>
+            {language === 'ar' ? 'اختر قالب' : 'Choose Template'}
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[60vh] pr-2">
+          <div className="space-y-6 py-2">
+            {categories.map((category) => (
+              <div key={category}>
+                <p className="text-sm font-semibold text-muted-foreground mb-3">
+                  {categoryLabels[category] || category}
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {TEMPLATES.filter((t) => t.category === category).map((tmpl) => {
+                    const isActive = currentTemplate === tmpl.id;
+                    return (
+                      <motion.button
+                        key={tmpl.id}
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onSelect(tmpl.id)}
+                        className={cn(
+                          'relative rounded-2xl overflow-hidden transition-all text-start border',
+                          isActive
+                            ? 'border-primary ring-2 ring-primary/30 shadow-glow'
+                            : 'border-border/50 hover:border-primary/30 shadow-premium hover:shadow-glow'
+                        )}
+                      >
+                        {/* Preview area */}
+                        <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden p-3">
+                          <div className="space-y-1.5">
+                            <div className="h-3 rounded-sm w-3/4" style={{ backgroundColor: tmpl.colors[0] + '25' }} />
+                            <div className="h-1.5 rounded-sm w-full" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
+                            <div className="h-1 rounded-sm w-5/6 bg-gray-200 dark:bg-gray-700" />
+                            <div className="pt-1">
+                              <div className="h-1.5 rounded-sm w-1/2 mb-1" style={{ backgroundColor: tmpl.colors[0] + '35' }} />
+                              <div className="h-1 rounded-sm w-full bg-gray-200 dark:bg-gray-700" />
+                              <div className="h-1 rounded-sm w-4/5 bg-gray-200 dark:bg-gray-700" />
+                            </div>
+                            <div className="pt-1">
+                              <div className="h-1.5 rounded-sm w-1/2 mb-1" style={{ backgroundColor: tmpl.colors[0] + '35' }} />
+                              <div className="flex gap-1">
+                                <div className="h-3 w-8 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
+                                <div className="h-3 w-10 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
+                              </div>
+                            </div>
+                          </div>
+                          {isActive && (
+                            <div className="absolute top-2 end-2 flex h-6 w-6 items-center justify-center rounded-full gradient-brand text-white">
+                              <Check className="h-4 w-4" />
+                            </div>
+                          )}
+                          {tmpl.isPremium && (
+                            <div className="absolute top-2 start-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-[9px] font-bold">
+                              <Lock className="h-2.5 w-2.5" />
+                              PRO
+                            </div>
+                          )}
+                        </div>
+                        {/* Info */}
+                        <div className="p-2.5">
+                          <p className="text-xs font-semibold truncate">
+                            {language === 'ar' ? tmpl.nameAr : tmpl.name}
+                          </p>
+                          <div className="flex gap-1 mt-1">
+                            {tmpl.colors.slice(0, 3).map((color) => (
+                              <div
+                                key={color}
+                                className="w-3 h-3 rounded-full border border-border/30"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   );
 }

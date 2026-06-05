@@ -6,6 +6,7 @@ import {
   Resume,
   ResumeData,
   getDefaultResumeData,
+  getSampleResumeData,
   generateId,
   TEMPLATES,
 } from './types';
@@ -56,6 +57,7 @@ interface AppState {
 
   // Init
   createNewResume: (title?: string, template?: string) => string;
+  fillWithSampleData: () => void;
 }
 
 /** Reactive hook that returns the current resume and triggers re-renders on data changes */
@@ -185,6 +187,21 @@ export const useAppStore = create<AppState>()(
         }));
         return id;
       },
+
+      fillWithSampleData: () => {
+        const state = get();
+        if (!state.currentResumeId) return;
+        const resume = state.resumes.find((r) => r.id === state.currentResumeId);
+        if (!resume) return;
+        const sampleData = getSampleResumeData(resume.language);
+        set({
+          resumes: state.resumes.map((r) =>
+            r.id === state.currentResumeId
+              ? { ...r, data: sampleData, updatedAt: new Date().toISOString() }
+              : r
+          ),
+        });
+      },
     }),
     {
       name: 'resume-builder-store',
@@ -195,6 +212,8 @@ export const useAppStore = create<AppState>()(
         isLoggedIn: state.isLoggedIn,
         userName: state.userName,
       }),
+      // Skip server-side hydration to prevent mismatch
+      skipHydration: true,
     }
   )
 );

@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import {
+  AafiatakProTemplate,
   ClassicTemplate,
   ModernTemplate,
   ExecutiveTemplate,
@@ -28,6 +29,7 @@ import { getSampleResumeData } from '@/lib/types';
 import type { ResumeData, Language } from '@/lib/types';
 
 const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
+  aafiatakpro: AafiatakProTemplate,
   classic: ClassicTemplate,
   modern: ModernTemplate,
   executive: ExecutiveTemplate,
@@ -86,7 +88,7 @@ export function MiniTemplatePreview({
   className = '',
   onClick,
 }: MiniTemplatePreviewProps) {
-  const TemplateComponent = TEMPLATE_MAP[templateId] || ClassicTemplate;
+  const TemplateComponent = TEMPLATE_MAP[templateId] || AafiatakProTemplate;
   const sampleData = useMemo(() => getSampleData(language), [language]);
 
   // A4 dimensions in mm; we render at ~1px per mm for the thumbnail base
@@ -97,6 +99,7 @@ export function MiniTemplatePreview({
   const scale = Math.min(width / a4Width, height / a4Height);
 
   const color = primaryColor || (
+    templateId === 'aafiatakpro' ? '#0ea5e9' :
     templateId === 'executive' ? '#0F172A' :
     templateId === 'creative' ? '#8B5CF6' :
     templateId === 'medical' ? '#0D9488' :

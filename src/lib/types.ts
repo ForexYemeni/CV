@@ -165,6 +165,7 @@ export function generateId(): string {
 }
 
 export const TEMPLATES: TemplateInfo[] = [
+  { id: 'aafiatakpro', name: 'Aafiatak Pro', nameAr: 'عافية تك برو', slug: 'aafiatakpro', category: 'professional', categoryAr: 'احترافي', description: 'Premium gradient banner with timeline and progress bars', descriptionAr: 'تصميم احترافي مع شعار متدرج وخط زمني وأشرطة تقدم', isPremium: false, colors: ['#0ea5e9', '#0284c7', '#14b8a6'], preview: '' },
   { id: 'modern', name: 'Modern Professional', nameAr: 'احترافي حديث', slug: 'modern', category: 'professional', categoryAr: 'احترافي', description: 'Sleek modern professional design', descriptionAr: 'تصميم احترافي حديث وأنيق', isPremium: false, colors: ['#2563EB', '#1E40AF', '#1D4ED8'], preview: '' },
   { id: 'executive', name: 'Executive Elite', nameAr: 'تنفيذي نخبة', slug: 'executive', category: 'professional', categoryAr: 'احترافي', description: 'Bold executive elite style', descriptionAr: 'أسلوب تنفيذي نخبوي', isPremium: false, colors: ['#0F172A', '#334155', '#475569'], preview: '' },
   { id: 'ats', name: 'ATS Pro', nameAr: 'ATS برو', slug: 'ats', category: 'professional', categoryAr: 'احترافي', description: 'Optimized for ATS systems', descriptionAr: 'مُحسّن لأنظمة التتبع', isPremium: false, colors: ['#1F2937', '#374151', '#4B5563'], preview: '' },

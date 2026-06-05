@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import {
+  AafiatakProTemplate,
   ClassicTemplate,
   ModernTemplate,
   ExecutiveTemplate,
@@ -37,6 +38,7 @@ import {
 import type { TemplateProps } from '@/components/templates';
 
 const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
+  aafiatakpro: AafiatakProTemplate,
   classic: ClassicTemplate,
   modern: ModernTemplate,
   executive: ExecutiveTemplate,
@@ -79,7 +81,7 @@ export function ResumePreview() {
   const zoomIn = () => setPreviewZoom(Math.min(previewZoom + 0.15, 2));
   const zoomOut = () => setPreviewZoom(Math.max(previewZoom - 0.15, 0.3));
 
-  const TemplateComponent = TEMPLATE_MAP[resume.template] || ClassicTemplate;
+  const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
 
   return (
     <div className={`flex flex-col h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>

@@ -14,6 +14,15 @@ import {
   Globe2,
   FolderKanban,
   Link as LinkIcon,
+  FileText,
+  Star,
+  Clock,
+  CheckCircle2,
+  Building2,
+  Calendar,
+  Shield,
+  BookOpen,
+  Trophy,
 } from 'lucide-react';
 import type { ResumeData, SkillLevel, LanguageLevel, DegreeType } from '@/lib/types';
 import { SKILL_LEVEL_LABELS, LANGUAGE_LEVEL_LABELS, DEGREE_LABELS } from '@/lib/types';
@@ -2577,8 +2586,551 @@ export function FinanceTemplate({ data, primaryColor, fontFamily, fontSize, lang
 /*                                                                              */
 /* ============================================================================ */
 
+/* ============================================================================ */
+/*                                                                              */
+/*   AAFIATAK PRO TEMPLATE – Gradient banner, timeline, progress bars, dots     */
+/*                                                                              */
+/* ============================================================================ */
+
+/** Helper: compute years of experience from experience entries */
+function computeYears(experience: ResumeData['experience']): number {
+  if (!experience.length) return 0;
+  let totalMonths = 0;
+  experience.forEach((exp) => {
+    const start = new Date(exp.startDate + '-01');
+    const end = exp.current ? new Date() : new Date(exp.endDate + '-01');
+    if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+      totalMonths += (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    }
+  });
+  return Math.max(1, Math.round(totalMonths / 12));
+}
+
+/** Skill level color mapping for AafiatakPro */
+function aafiSkillColor(level: SkillLevel, primary: string): { bar: string; badge: string; badgeText: string } {
+  switch (level) {
+    case 'beginner': return { bar: '#94a3b8', badge: '#f1f5f9', badgeText: '#64748b' };
+    case 'intermediate': return { bar: '#38bdf8', badge: '#e0f2fe', badgeText: '#0284c7' };
+    case 'advanced': return { bar: '#0ea5e9', badge: '#e0f2fe', badgeText: '#0284c7' };
+    case 'expert': return { bar: primary, badge: primary + '18', badgeText: primary };
+    default: return { bar: '#94a3b8', badge: '#f1f5f9', badgeText: '#64748b' };
+  }
+}
+
+/** Language level color mapping for AafiatakPro */
+function aafiLangColor(level: LanguageLevel): { dot: string; badge: string; badgeText: string } {
+  switch (level) {
+    case 'native': return { dot: '#0ea5e9', badge: '#e0f2fe', badgeText: '#0284c7' };
+    case 'fluent': return { dot: '#10b981', badge: '#d1fae5', badgeText: '#059669' };
+    case 'advanced': return { dot: '#38bdf8', badge: '#e0f2fe', badgeText: '#0284c7' };
+    case 'intermediate': return { dot: '#f59e0b', badge: '#fef3c7', badgeText: '#d97706' };
+    case 'basic': return { dot: '#94a3b8', badge: '#f1f5f9', badgeText: '#64748b' };
+    default: return { dot: '#94a3b8', badge: '#f1f5f9', badgeText: '#64748b' };
+  }
+}
+
+export function AafiatakProTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
+  const ff = resolveFont(fontFamily);
+  const sz = fontSizeBase(fontSize);
+  const d = dir(language);
+  const sections = getVisibleSections(data.sections);
+  const p = data.personalInfo;
+  const isR = isRtl(language);
+
+  // Gradient colors
+  const gradFrom = primaryColor;
+  const gradVia = '#0ea5e9';
+  const gradTo = '#14b8a6';
+
+  // Stats
+  const yearsExp = computeYears(data.experience);
+  const completedJobs = data.experience.filter((e) => !e.current).length || data.experience.length;
+
+  // Section header render helper (not a component, just a function)
+  const renderSectionHeader = (icon: React.ReactNode, title: string) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${primaryColor}15` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, backgroundColor: primaryColor + '12', color: primaryColor, flexShrink: 0 }}>
+        {icon}
+      </div>
+      <div style={{ fontWeight: 700, fontSize: sz + 2, color: '#1a1a1a', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{title}</div>
+    </div>
+  );
+
+  // GlassCard render helper (not a component, just a function)
+  const renderGlassCard = (children: React.ReactNode, style?: React.CSSProperties) => (
+    <div style={{
+      backgroundColor: '#ffffff',
+      borderRadius: 16,
+      padding: '16px 18px',
+      marginBottom: 14,
+      border: '1px solid #f0f0f0',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+
+  // ---- Render different section types ----
+  const renderAafiatakSkills = () => {
+    if (!data.skills.length) return null;
+    return renderGlassCard(
+      <>
+        {renderSectionHeader(<Wrench size={14} />, language === 'ar' ? 'المهارات' : 'Skills')}
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+          {data.skills.map((sk) => {
+            const colors = aafiSkillColor(sk.level, primaryColor);
+            return (
+              <div key={sk.id}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontSize: sz, fontWeight: 600, color: '#1a1a1a' }}>{sk.name}</span>
+                  <span style={{
+                    fontSize: sz - 3,
+                    fontWeight: 600,
+                    padding: '2px 8px',
+                    borderRadius: 10,
+                    backgroundColor: colors.badge,
+                    color: colors.badgeText,
+                  }}>
+                    {SKILL_LEVEL_LABELS[language][sk.level]}
+                  </span>
+                </div>
+                <div style={{ height: 6, borderRadius: 4, backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    borderRadius: 4,
+                    width: getSkillWidth(sk.level),
+                    background: `linear-gradient(90deg, ${colors.bar}, ${colors.bar}cc)`,
+                    transition: 'width 0.5s ease',
+                  }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
+
+  const renderAafiatakExperience = () => {
+    if (!data.experience.length) return null;
+    return renderGlassCard(
+      <>
+        {renderSectionHeader(<Briefcase size={14} />, language === 'ar' ? 'الخبرات العملية' : 'Work Experience')}
+        <div style={{ position: 'relative' as const, paddingRight: isR ? 0 : 24, paddingLeft: isR ? 24 : 0 }}>
+          {/* Timeline line */}
+          <div style={{
+            position: 'absolute' as const,
+            top: 6,
+            bottom: 6,
+            width: 2,
+            backgroundColor: primaryColor + '20',
+            ...(isR ? { right: 8 } : { left: 8 }),
+          }} />
+          {data.experience.map((exp, idx) => (
+            <div key={exp.id} style={{ position: 'relative' as const, marginBottom: idx < data.experience.length - 1 ? 16 : 0 }}>
+              {/* Timeline dot */}
+              <div style={{
+                position: 'absolute' as const,
+                top: 6,
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                border: `2px solid ${idx === 0 ? primaryColor : primaryColor + '40'}`,
+                backgroundColor: idx === 0 ? primaryColor : '#ffffff',
+                ...(isR ? { right: 3 } : { left: 3 }),
+                zIndex: 1,
+              }} />
+              {/* Content */}
+              <div style={{ ...(isR ? { paddingRight: 28 } : { paddingLeft: 28 }) }}>
+                <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a', marginBottom: 2 }}>{exp.jobTitle}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                  <Building2 size={10} style={{ color: primaryColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: sz - 1, color: '#555', fontWeight: 500 }}>{exp.company}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                  <Calendar size={10} style={{ color: '#999', flexShrink: 0 }} />
+                  <span style={{ fontSize: sz - 2, color: '#999' }}>
+                    {formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
+                  </span>
+                </div>
+                {exp.description && (
+                  <div style={{
+                    fontSize: sz - 1,
+                    color: '#666',
+                    whiteSpace: 'pre-line' as const,
+                    backgroundColor: '#f8fafc',
+                    padding: '6px 10px',
+                    borderRadius: 8,
+                    lineHeight: 1.6,
+                  }}>
+                    {exp.description}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  };
+
+  const renderAafiatakEducation = () => {
+    if (!data.education.length) return null;
+    return renderGlassCard(
+      <>
+        {renderSectionHeader(<GraduationCap size={14} />, language === 'ar' ? 'المؤهلات التعليمية' : 'Education')}
+        {data.education.map((edu) => (
+          <div key={edu.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid #f5f5f5' }}>
+            <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a', marginBottom: 2 }}>{edu.major}</div>
+            <div style={{ fontSize: sz - 1, color: '#555', marginBottom: 2 }}>
+              {edu.institution}{edu.degree ? ` — ${DEGREE_LABELS[language][edu.degree as DegreeType] || edu.degree}` : ''}
+            </div>
+            <div style={{ fontSize: sz - 2, color: '#999' }}>
+              {edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}
+            </div>
+            {edu.description && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 3 }}>{edu.description}</div>}
+          </div>
+        ))}
+      </>
+    );
+  };
+
+  const renderAafiatakCertifications = () => {
+    if (!data.certifications.length) return null;
+
+    const certTypeColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
+      certificate: { bg: '#fef3c7', text: '#d97706', icon: <Award size={12} /> },
+      course: { bg: '#dbeafe', text: '#2563eb', icon: <BookOpen size={12} /> },
+      license: { bg: '#d1fae5', text: '#059669', icon: <Shield size={12} /> },
+      training: { bg: '#ede9fe', text: '#7c3aed', icon: <Trophy size={12} /> },
+    };
+    const defaultCert = certTypeColors.certificate;
+
+    return renderGlassCard(
+      <>
+        {renderSectionHeader(<Award size={14} />, language === 'ar' ? 'الشهادات' : 'Certifications')}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {data.certifications.map((c) => {
+            const typeStyle = defaultCert;
+            return (
+              <div key={c.id} style={{
+                padding: '8px 10px',
+                borderRadius: 10,
+                border: '1px solid #f0f0f0',
+                backgroundColor: '#fafafa',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 6, backgroundColor: typeStyle.bg, color: typeStyle.text, flexShrink: 0 }}>
+                    {typeStyle.icon}
+                  </div>
+                  <span style={{ fontWeight: 600, fontSize: sz - 1, color: '#1a1a1a', lineHeight: 1.3 }}>{c.name}</span>
+                </div>
+                {c.issuer && <div style={{ fontSize: sz - 2, color: '#888', marginBottom: 2 }}>{c.issuer}</div>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{
+                    fontSize: sz - 3,
+                    fontWeight: 600,
+                    padding: '1px 6px',
+                    borderRadius: 6,
+                    backgroundColor: typeStyle.bg,
+                    color: typeStyle.text,
+                  }}>
+                    {language === 'ar' ? 'شهادة' : 'Certificate'}
+                  </span>
+                  {c.date && <span style={{ fontSize: sz - 3, color: '#aaa' }}>{c.date}</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
+
+  const renderAafiatakLanguages = () => {
+    if (!data.languages.length) return null;
+    return renderGlassCard(
+      <>
+        {renderSectionHeader(<Globe2 size={14} />, language === 'ar' ? 'اللغات' : 'Languages')}
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          {data.languages.map((l) => {
+            const filled = getLanguageDots(l.level);
+            const colors = aafiLangColor(l.level);
+            return (
+              <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: sz, fontWeight: 600, color: '#1a1a1a', minWidth: 65 }}>{l.name}</span>
+                <span style={{
+                  fontSize: sz - 3,
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: 10,
+                  backgroundColor: colors.badge,
+                  color: colors.badgeText,
+                }}>
+                  {LANGUAGE_LEVEL_LABELS[language][l.level]}
+                </span>
+                <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' as const }}>
+                  {[1, 2, 3, 4, 5].map((dot) => (
+                    <div key={dot} style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: dot <= filled ? colors.dot : '#e2e8f0',
+                      transition: 'background-color 0.2s',
+                    }} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
+
+  const renderAafiatakProjects = () => {
+    if (!data.projects.length) return null;
+    return renderGlassCard(
+      <>
+        {renderSectionHeader(<FolderKanban size={14} />, language === 'ar' ? 'المشاريع' : 'Projects')}
+        {data.projects.map((proj) => (
+          <div key={proj.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid #f5f5f5' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a' }}>{proj.name}</span>
+              {proj.url && <ExternalLink size={10} style={{ color: '#aaa' }} />}
+            </div>
+            {proj.description && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 2 }}>{proj.description}</div>}
+            {proj.technologies.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginTop: 4 }}>
+                {proj.technologies.map((t) => (
+                  <span key={t} style={{ fontSize: sz - 2, padding: '1px 7px', borderRadius: 6, backgroundColor: primaryColor + '10', color: primaryColor, fontWeight: 500 }}>{t}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </>
+    );
+  };
+
+  const renderSection = (type: string) => {
+    switch (type) {
+      case 'experience': return renderAafiatakExperience();
+      case 'education': return renderAafiatakEducation();
+      case 'skills': return renderAafiatakSkills();
+      case 'certifications': return renderAafiatakCertifications();
+      case 'languages': return renderAafiatakLanguages();
+      case 'projects': return renderAafiatakProjects();
+      default: return null;
+    }
+  };
+
+  // Compute stats for the header
+  const avgRating = data.experience.length > 0 ? '4.9' : '—';
+
+  return (
+    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, overflow: 'hidden' }}>
+      {/* ============ GRADIENT BANNER HEADER ============ */}
+      <div style={{
+        background: `linear-gradient(135deg, ${gradFrom}, ${gradVia}, ${gradTo})`,
+        color: '#ffffff',
+        padding: '28px 28px 22px',
+        position: 'relative' as const,
+        overflow: 'hidden',
+      }}>
+        {/* Decorative circles */}
+        <div style={{ position: 'absolute' as const, top: -30, right: -20, width: 120, height: 120, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.08)', filter: 'blur(2px)' }} />
+        <div style={{ position: 'absolute' as const, bottom: -40, left: -15, width: 100, height: 100, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.06)', filter: 'blur(2px)' }} />
+        <div style={{ position: 'absolute' as const, top: 20, right: 80, width: 60, height: 60, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.05)', filter: 'blur(1px)' }} />
+
+        {/* Header content */}
+        <div style={{ display: 'flex', gap: 18, alignItems: 'center', position: 'relative' as const, zIndex: 1 }}>
+          {/* Photo with gradient ring */}
+          <div style={{ flexShrink: 0 }}>
+            {p.photo ? (
+              <div style={{
+                width: 84,
+                height: 84,
+                borderRadius: '50%',
+                padding: 3,
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.2))',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+              }}>
+                <img src={p.photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid #ffffff' }} />
+              </div>
+            ) : (
+              <div style={{
+                width: 84,
+                height: 84,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '3px solid rgba(255,255,255,0.5)',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+              }}>
+                <span style={{ fontSize: sz + 16, fontWeight: 800, color: '#ffffff' }}>
+                  {(p.fullName || '?').charAt(0)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Name, title, badges */}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: sz + 14, fontWeight: 800, marginBottom: 2, letterSpacing: 0.3, textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+              {p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}
+            </div>
+            <div style={{ fontSize: sz + 3, fontWeight: 400, opacity: 0.92, marginBottom: 8, letterSpacing: 0.5 }}>
+              {p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}
+            </div>
+
+            {/* Specialization badges */}
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5, marginBottom: 8 }}>
+              {data.skills.slice(0, 3).map((sk) => (
+                <span key={sk.id} style={{
+                  fontSize: sz - 3,
+                  fontWeight: 500,
+                  padding: '2px 10px',
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  color: '#ffffff',
+                  backdropFilter: 'blur(4px)',
+                }}>
+                  {sk.name}
+                </span>
+              ))}
+            </div>
+
+            {/* Location + Experience row */}
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, opacity: 0.88 }}>
+              {(p.city || p.country) && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}
+                </span>
+              )}
+              {data.experience.length > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Briefcase size={10} /> {yearsExp}+ {language === 'ar' ? 'سنة خبرة' : 'yrs exp'}
+                </span>
+              )}
+              {p.email && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Mail size={10} /> {p.email}
+                </span>
+              )}
+              {p.phone && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Phone size={10} /> {p.phone}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics row */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 10,
+          marginTop: 16,
+          position: 'relative' as const,
+          zIndex: 1,
+        }}>
+          <div style={{ textAlign: 'center' as const, padding: '8px 4px', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
+              <CheckCircle2 size={11} style={{ opacity: 0.9 }} />
+              <span style={{ fontSize: sz + 6, fontWeight: 800 }}>{completedJobs}</span>
+            </div>
+            <div style={{ fontSize: sz - 3, opacity: 0.8, fontWeight: 500 }}>
+              {language === 'ar' ? 'أعمال مكتملة' : 'Completed Jobs'}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' as const, padding: '8px 4px', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
+              <Star size={11} style={{ opacity: 0.9 }} />
+              <span style={{ fontSize: sz + 6, fontWeight: 800 }}>{avgRating}</span>
+            </div>
+            <div style={{ fontSize: sz - 3, opacity: 0.8, fontWeight: 500 }}>
+              {language === 'ar' ? 'التقييم' : 'Rating'}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' as const, padding: '8px 4px', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
+              <Clock size={11} style={{ opacity: 0.9 }} />
+              <span style={{ fontSize: sz + 6, fontWeight: 800 }}>{yearsExp}+</span>
+            </div>
+            <div style={{ fontSize: sz - 3, opacity: 0.8, fontWeight: 500 }}>
+              {language === 'ar' ? 'سنوات الخبرة' : 'Years Exp'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============ BODY CONTENT ============ */}
+      <div style={{ padding: '16px 20px 28px' }}>
+        {/* Summary / Bio section */}
+        {p.summary && renderGlassCard(
+          <>
+            {renderSectionHeader(<FileText size={14} />, language === 'ar' ? 'نبذة احترافية' : 'Professional Summary')}
+            <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const, lineHeight: 1.7 }}>{p.summary}</div>
+          </>
+        )}
+
+        {/* Other sections */}
+        {sections.map((type) => (
+          <div key={type}>{renderSection(type)}</div>
+        ))}
+
+        {/* Contact footer row */}
+        {renderGlassCard(
+          <>
+            {renderSectionHeader(<Phone size={14} />, language === 'ar' ? 'معلومات التواصل' : 'Contact Information')}
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px 16px' }}>
+              {p.email && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
+                  <Mail size={11} style={{ color: primaryColor }} /> {p.email}
+                </span>
+              )}
+              {p.phone && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
+                  <Phone size={11} style={{ color: primaryColor }} /> {p.phone}
+                </span>
+              )}
+              {p.website && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
+                  <Globe size={11} style={{ color: primaryColor }} /> {p.website}
+                </span>
+              )}
+              {p.linkedin && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
+                  <Linkedin size={11} style={{ color: primaryColor }} /> {p.linkedin}
+                </span>
+              )}
+              {p.github && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
+                  <Github size={11} style={{ color: primaryColor }} /> {p.github}
+                </span>
+              )}
+              {(p.city || p.country || p.address) && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
+                  <MapPin size={11} style={{ color: primaryColor }} /> {[p.address, p.city, p.country].filter(Boolean).join(', ')}
+                </span>
+              )}
+            </div>
+          </>,
+          { marginBottom: 0 }
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function getTemplateComponent(slug: string): React.ComponentType<TemplateProps> {
   const map: Record<string, React.ComponentType<TemplateProps>> = {
+    aafiatakpro: AafiatakProTemplate,
     classic: ClassicTemplate,
     modern: ModernTemplate,
     executive: ExecutiveTemplate,
@@ -2600,5 +3152,5 @@ export function getTemplateComponent(slug: string): React.ComponentType<Template
     marketing: MarketingTemplate,
     finance: FinanceTemplate,
   };
-  return map[slug] || ClassicTemplate;
+  return map[slug] || AafiatakProTemplate;
 }

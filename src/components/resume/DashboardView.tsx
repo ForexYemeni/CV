@@ -49,6 +49,7 @@ import {
   FolderOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MiniTemplatePreview } from './MiniTemplatePreview';
 
 export function DashboardView() {
   const language = useAppStore((s) => s.language);
@@ -441,22 +442,18 @@ function ResumeCard({
       whileHover={{ y: -4 }}
       className="glass rounded-2xl overflow-hidden shadow-premium hover:shadow-glow transition-all duration-300 group"
     >
-      {/* Preview thumbnail area */}
+      {/* Preview thumbnail area - real template rendering */}
       <div
-        className="relative h-40 cursor-pointer flex items-center justify-center overflow-hidden"
+        className="relative h-48 cursor-pointer flex items-center justify-center overflow-hidden"
         onClick={() => onEdit(resume.id)}
       >
-        <div className="absolute inset-0 opacity-30" style={{
-          background: `linear-gradient(135deg, ${resume.primaryColor}15, ${resume.primaryColor}30)`,
-        }} />
-        <div
-          className="text-5xl font-bold select-none relative"
-          style={{ color: resume.primaryColor + '25', fontFamily: 'var(--font-cairo), var(--font-inter)' }}
-        >
-          {resume.data.personalInfo.fullName
-            ? resume.data.personalInfo.fullName.charAt(0).toUpperCase()
-            : <FileText className="h-12 w-12" style={{ color: resume.primaryColor + '30' }} />}
-        </div>
+        <MiniTemplatePreview
+          templateId={resume.template}
+          primaryColor={resume.primaryColor}
+          language={resume.language}
+          width={280}
+          height={192}
+        />
         {/* Gradient line at top */}
         <div className="absolute top-0 inset-x-0 h-1" style={{ background: `linear-gradient(90deg, ${resume.primaryColor}, ${resume.primaryColor}80)` }} />
         {/* Template badge */}

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Check, LayoutTemplate, Lock, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MiniTemplatePreview } from './MiniTemplatePreview';
 
 export function TemplatesView() {
   const language = useAppStore((s) => s.language);
@@ -56,7 +57,7 @@ export function TemplatesView() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] p-4 md:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -128,34 +129,19 @@ export function TemplatesView() {
                 whileHover={{ y: -4 }}
                 onClick={() => handleSelectTemplate(tmpl.id)}
                 className={cn(
-                  'group cursor-pointer rounded-2xl overflow-hidden transition-all shadow-premium hover:shadow-glow',
-                  isActive && 'ring-2 ring-primary'
+                  'group cursor-pointer rounded-2xl overflow-hidden transition-all shadow-premium hover:shadow-glow border',
+                  isActive ? 'ring-2 ring-primary border-primary' : 'border-border/30 hover:border-primary/30'
                 )}
               >
-                {/* Template Preview */}
-                <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden">
-                  <div className="absolute inset-4 space-y-2">
-                    <div className="h-6 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '20' }} />
-                    <div className="h-2 rounded-sm w-3/4" style={{ backgroundColor: tmpl.colors[0] + '30' }} />
-                    <div className="h-1.5 rounded-sm w-full bg-gray-200 dark:bg-gray-700" />
-                    <div className="h-1.5 rounded-sm w-5/6 bg-gray-200 dark:bg-gray-700" />
-                    <div className="pt-2">
-                      <div className="h-2 rounded-sm w-1/2 mb-1.5" style={{ backgroundColor: tmpl.colors[0] + '40' }} />
-                      <div className="space-y-1">
-                        <div className="h-1.5 rounded-sm w-full bg-gray-200 dark:bg-gray-700" />
-                        <div className="h-1.5 rounded-sm w-4/5 bg-gray-200 dark:bg-gray-700" />
-                        <div className="h-1.5 rounded-sm w-3/4 bg-gray-200 dark:bg-gray-700" />
-                      </div>
-                    </div>
-                    <div className="pt-1">
-                      <div className="h-2 rounded-sm w-1/2 mb-1.5" style={{ backgroundColor: tmpl.colors[0] + '40' }} />
-                      <div className="flex flex-wrap gap-1">
-                        <div className="h-4 w-12 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
-                        <div className="h-4 w-16 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
-                        <div className="h-4 w-10 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
-                      </div>
-                    </div>
-                  </div>
+                {/* Template Preview - Real rendered template */}
+                <div className="aspect-[3/4] relative overflow-hidden bg-white">
+                  <MiniTemplatePreview
+                    templateId={tmpl.id}
+                    primaryColor={tmpl.colors[0]}
+                    language={language}
+                    width={300}
+                    height={400}
+                  />
 
                   {/* Overlay on hover */}
                   <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors flex items-center justify-center">

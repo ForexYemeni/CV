@@ -39,6 +39,7 @@ import { ResumePreview } from './ResumePreview';
 import { TemplateSelector } from './TemplateSelector';
 import { ExportDialog } from './ExportDialog';
 import { AIAssistant } from './AIAssistant';
+import { MiniTemplatePreview } from './MiniTemplatePreview';
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -396,7 +397,7 @@ function TemplateSelectorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[80vh] glass-strong border-border/30" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] glass-strong border-border/30" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-brand text-white">
@@ -405,14 +406,14 @@ function TemplateSelectorDialog({
             {language === 'ar' ? 'اختر قالب' : 'Choose Template'}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[60vh] pr-2">
+        <ScrollArea className="max-h-[70vh] pr-2">
           <div className="space-y-6 py-2">
             {categories.map((category) => (
               <div key={category}>
                 <p className="text-sm font-semibold text-muted-foreground mb-3">
                   {categoryLabels[category] || category}
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {TEMPLATES.filter((t) => t.category === category).map((tmpl) => {
                     const isActive = currentTemplate === tmpl.id;
                     return (
@@ -428,25 +429,15 @@ function TemplateSelectorDialog({
                             : 'border-border/50 hover:border-primary/30 shadow-premium hover:shadow-glow'
                         )}
                       >
-                        {/* Preview area */}
-                        <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden p-3">
-                          <div className="space-y-1.5">
-                            <div className="h-3 rounded-sm w-3/4" style={{ backgroundColor: tmpl.colors[0] + '25' }} />
-                            <div className="h-1.5 rounded-sm w-full" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
-                            <div className="h-1 rounded-sm w-5/6 bg-gray-200 dark:bg-gray-700" />
-                            <div className="pt-1">
-                              <div className="h-1.5 rounded-sm w-1/2 mb-1" style={{ backgroundColor: tmpl.colors[0] + '35' }} />
-                              <div className="h-1 rounded-sm w-full bg-gray-200 dark:bg-gray-700" />
-                              <div className="h-1 rounded-sm w-4/5 bg-gray-200 dark:bg-gray-700" />
-                            </div>
-                            <div className="pt-1">
-                              <div className="h-1.5 rounded-sm w-1/2 mb-1" style={{ backgroundColor: tmpl.colors[0] + '35' }} />
-                              <div className="flex gap-1">
-                                <div className="h-3 w-8 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
-                                <div className="h-3 w-10 rounded-sm" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
-                              </div>
-                            </div>
-                          </div>
+                        {/* Real template preview */}
+                        <div className="aspect-[3/4] relative overflow-hidden bg-white">
+                          <MiniTemplatePreview
+                            templateId={tmpl.id}
+                            primaryColor={tmpl.colors[0]}
+                            language={language}
+                            width={240}
+                            height={320}
+                          />
                           {isActive && (
                             <div className="absolute top-2 end-2 flex h-6 w-6 items-center justify-center rounded-full gradient-brand text-white">
                               <Check className="h-4 w-4" />

@@ -21,6 +21,7 @@ import {
   Play,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MiniTemplatePreview } from '@/components/resume/MiniTemplatePreview';
 
 // ─── Animated Counter ──────────────────────────────────────
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
@@ -178,8 +179,8 @@ function FloatingDots() {
   );
 }
 
-// ─── Resume Mockup ──────────────────────────────────────
-function ResumeMockup() {
+// ─── Resume Mockup with real template ──────────────────────────────────────
+function ResumeMockup({ language }: { language: 'ar' | 'en' }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 50 }}
@@ -188,34 +189,14 @@ function ResumeMockup() {
       className="relative hidden lg:block"
     >
       <div className="animate-float">
-        <div className="w-72 xl:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl overflow-hidden border border-border/30">
-          {/* Header */}
-          <div className="gradient-brand p-5">
-            <div className="w-14 h-14 rounded-full bg-white/20 mb-3" />
-            <div className="h-3 w-3/4 rounded bg-white/30 mb-2" />
-            <div className="h-2 w-1/2 rounded bg-white/20" />
-          </div>
-          {/* Body */}
-          <div className="p-5 space-y-4">
-            <div>
-              <div className="h-2 w-1/3 rounded bg-primary/30 mb-2" />
-              <div className="h-1.5 w-full rounded bg-muted mb-1" />
-              <div className="h-1.5 w-5/6 rounded bg-muted" />
-            </div>
-            <div>
-              <div className="h-2 w-1/4 rounded bg-primary/30 mb-2" />
-              <div className="flex gap-2">
-                <div className="h-5 w-14 rounded bg-primary/10" />
-                <div className="h-5 w-16 rounded bg-primary/10" />
-                <div className="h-5 w-12 rounded bg-primary/10" />
-              </div>
-            </div>
-            <div>
-              <div className="h-2 w-1/3 rounded bg-primary/30 mb-2" />
-              <div className="h-1.5 w-full rounded bg-muted mb-1" />
-              <div className="h-1.5 w-4/5 rounded bg-muted" />
-            </div>
-          </div>
+        <div className="rounded-xl shadow-2xl overflow-hidden border border-border/30">
+          <MiniTemplatePreview
+            templateId="modern"
+            primaryColor="#2563EB"
+            language={language}
+            width={280}
+            height={396}
+          />
         </div>
       </div>
       {/* Glow effect behind mockup */}
@@ -350,7 +331,7 @@ export function LandingPage() {
               </motion.div>
             </div>
 
-            <ResumeMockup />
+            <ResumeMockup language={language} />
           </div>
         </div>
       </section>
@@ -420,26 +401,15 @@ export function LandingPage() {
               >
                 <div className="rounded-xl overflow-hidden shadow-premium hover:shadow-glow transition-shadow border border-border/30">
                   <div
-                    className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden p-4"
+                    className="aspect-[3/4] relative overflow-hidden bg-white"
                   >
-                    <div className="space-y-2">
-                      <div className="h-4 rounded" style={{ backgroundColor: tmpl.colors[0] + '25' }} />
-                      <div className="h-2 rounded w-3/4" style={{ backgroundColor: tmpl.colors[0] + '35' }} />
-                      <div className="h-1.5 rounded w-full bg-gray-200 dark:bg-gray-700" />
-                      <div className="h-1.5 rounded w-5/6 bg-gray-200 dark:bg-gray-700" />
-                      <div className="pt-2">
-                        <div className="h-2 rounded w-1/2 mb-1.5" style={{ backgroundColor: tmpl.colors[0] + '45' }} />
-                        <div className="h-1.5 rounded w-full bg-gray-200 dark:bg-gray-700" />
-                        <div className="h-1.5 rounded w-4/5 bg-gray-200 dark:bg-gray-700" />
-                      </div>
-                      <div className="pt-1">
-                        <div className="h-2 rounded w-1/2 mb-1.5" style={{ backgroundColor: tmpl.colors[0] + '45' }} />
-                        <div className="flex gap-1">
-                          <div className="h-4 w-10 rounded" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
-                          <div className="h-4 w-12 rounded" style={{ backgroundColor: tmpl.colors[0] + '15' }} />
-                        </div>
-                      </div>
-                    </div>
+                    <MiniTemplatePreview
+                      templateId={tmpl.id}
+                      primaryColor={tmpl.colors[0]}
+                      language={language}
+                      width={208}
+                      height={278}
+                    />
                     {tmpl.isPremium && (
                       <div className="absolute top-2 start-2 px-2 py-0.5 rounded-full text-[9px] font-bold bg-yellow-400/90 text-yellow-900">
                         PRO

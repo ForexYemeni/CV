@@ -174,7 +174,7 @@ export const useAppStore = create<AppState>()(
           fontFamily: 'inter',
           fontSize: 'medium',
           language: lang,
-          data: getDefaultResumeData(),
+          data: getSampleResumeData(lang),
           isPublic: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

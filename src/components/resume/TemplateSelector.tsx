@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Check, LayoutTemplate, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MiniTemplatePreview } from './MiniTemplatePreview';
 
 export function TemplateSelector() {
   const language = useAppStore((s) => s.language);
@@ -24,6 +25,7 @@ export function TemplateSelector() {
     minimal: language === 'ar' ? 'بسيط' : 'Minimal',
     industry: language === 'ar' ? 'صناعي' : 'Industry',
     academic: language === 'ar' ? 'أكاديمي' : 'Academic',
+    premium: language === 'ar' ? 'فاخر' : 'Premium',
   };
 
   return (
@@ -42,46 +44,23 @@ export function TemplateSelector() {
                 <Card
                   key={tmpl.id}
                   className={cn(
-                    'cursor-pointer transition-all hover:shadow-md',
-                    isActive && 'ring-2 ring-emerald-500 border-emerald-500'
+                    'cursor-pointer transition-all hover:shadow-md overflow-hidden p-0',
+                    isActive && 'ring-2 ring-primary border-primary'
                   )}
                   onClick={() => updateCurrentResumeSettings({ template: tmpl.id })}
                 >
-                  <CardContent className="p-3">
-                    {/* Preview thumbnail */}
-                    <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-md mb-2 flex items-center justify-center relative overflow-hidden">
-                      <div className="w-3/4 space-y-1.5">
-                        <div
-                          className="h-2 rounded-sm w-3/4"
-                          style={{ backgroundColor: tmpl.colors[0] + '30' }}
-                        />
-                        <div
-                          className="h-1 rounded-sm w-full"
-                          style={{ backgroundColor: tmpl.colors[0] + '15' }}
-                        />
-                        <div
-                          className="h-1 rounded-sm w-5/6"
-                          style={{ backgroundColor: tmpl.colors[0] + '15' }}
-                        />
-                        <div className="pt-1 space-y-1">
-                          <div
-                            className="h-1.5 rounded-sm w-1/2"
-                            style={{ backgroundColor: tmpl.colors[0] + '40' }}
-                          />
-                          <div className="h-1 rounded-sm w-full bg-gray-200 dark:bg-gray-700" />
-                          <div className="h-1 rounded-sm w-4/5 bg-gray-200 dark:bg-gray-700" />
-                        </div>
-                        <div className="pt-1 space-y-1">
-                          <div
-                            className="h-1.5 rounded-sm w-1/2"
-                            style={{ backgroundColor: tmpl.colors[0] + '40' }}
-                          />
-                          <div className="h-1 rounded-sm w-full bg-gray-200 dark:bg-gray-700" />
-                          <div className="h-1 rounded-sm w-3/4 bg-gray-200 dark:bg-gray-700" />
-                        </div>
-                      </div>
+                  <CardContent className="p-0">
+                    {/* Real template preview */}
+                    <div className="aspect-[3/4] relative overflow-hidden bg-white">
+                      <MiniTemplatePreview
+                        templateId={tmpl.id}
+                        primaryColor={tmpl.colors[0]}
+                        language={language}
+                        width={200}
+                        height={267}
+                      />
                       {isActive && (
-                        <div className="absolute top-1 end-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
+                        <div className="absolute top-1 end-1 flex h-5 w-5 items-center justify-center rounded-full gradient-brand text-white">
                           <Check className="h-3 w-3" />
                         </div>
                       )}
@@ -92,17 +71,19 @@ export function TemplateSelector() {
                       )}
                     </div>
 
-                    <p className="text-xs font-medium truncate">
-                      {language === 'ar' ? tmpl.nameAr : tmpl.name}
-                    </p>
-                    <div className="flex gap-1 mt-1">
-                      {tmpl.colors.slice(0, 3).map((color) => (
-                        <div
-                          key={color}
-                          className="w-3 h-3 rounded-full border border-gray-200 dark:border-gray-700"
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
+                    <div className="p-2">
+                      <p className="text-xs font-medium truncate">
+                        {language === 'ar' ? tmpl.nameAr : tmpl.name}
+                      </p>
+                      <div className="flex gap-1 mt-1">
+                        {tmpl.colors.slice(0, 3).map((color) => (
+                          <div
+                            key={color}
+                            className="w-3 h-3 rounded-full border border-border/30"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

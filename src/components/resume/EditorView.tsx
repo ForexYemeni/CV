@@ -41,7 +41,7 @@ import { ExportDialog } from './ExportDialog';
 import { AIAssistant } from './AIAssistant';
 import { MiniTemplatePreview } from './MiniTemplatePreview';
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -115,7 +115,7 @@ export function EditorView() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       {/* Editor Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b glass-strong shadow-premium">
+      <div className="flex items-center gap-2 px-3 py-2 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -142,7 +142,7 @@ export function EditorView() {
         <div className="hidden sm:flex items-center gap-1.5">
           <Palette className="h-4 w-4 text-muted-foreground" />
           <div className="flex gap-1">
-            {['#2563eb', '#059669', '#0d9488', '#7c3aed', '#be185d', '#b45309', '#18181b', '#374151'].map((color) => (
+            {['#0ea5e9', '#2563eb', '#059669', '#0d9488', '#7c3aed', '#be185d', '#b45309', '#18181b'].map((color) => (
               <button
                 key={color}
                 className={cn(
@@ -230,9 +230,23 @@ export function EditorView() {
           <span className="hidden lg:inline">{language === 'ar' ? 'ذكاء اصطناعي' : 'AI'}</span>
         </motion.button>
 
-        {/* Preview toggle */}
-        <Button variant="ghost" size="icon" onClick={() => setShowPreview(!showPreview)} className="md:hidden rounded-xl h-8 w-8">
+        {/* Preview toggle - ALWAYS visible */}
+        <Button
+          variant={showPreview ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setShowPreview(!showPreview)}
+          className={cn(
+            'rounded-xl h-8 gap-1.5',
+            showPreview && 'gradient-brand text-white'
+          )}
+        >
           {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          <span className="hidden sm:inline">
+            {showPreview
+              ? (language === 'ar' ? 'المحرر' : 'Editor')
+              : (language === 'ar' ? 'معاينة' : 'Preview')
+            }
+          </span>
         </Button>
 
         {/* Export button */}
@@ -257,7 +271,7 @@ export function EditorView() {
           )}
         >
           {/* Section tabs */}
-          <div className="border-b px-2 py-2">
+          <div className="border-b px-2 py-2 bg-muted/30">
             <ScrollArea orientation="horizontal" className="w-full">
               <div className="flex gap-1 pb-1">
                 {SECTIONS.map((section) => (

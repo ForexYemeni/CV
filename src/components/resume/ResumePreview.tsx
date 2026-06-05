@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -11,6 +12,8 @@ import {
   Maximize,
   Minimize,
   X,
+  Eye,
+  FileText,
 } from 'lucide-react';
 import {
   AafiatakProTemplate,
@@ -36,6 +39,8 @@ import {
   FinanceTemplate,
 } from '@/components/templates';
 import type { TemplateProps } from '@/components/templates';
+import { ProfessionalCVPreview } from './ProfessionalCVPreview';
+import { cn } from '@/lib/utils';
 
 const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
   aafiatakpro: AafiatakProTemplate,
@@ -59,7 +64,7 @@ const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
   healthcare: HealthcareTemplate,
   marketing: MarketingTemplate,
   finance: FinanceTemplate,
-  manager: CorporateTemplate, // Manager uses Corporate layout as base
+  manager: CorporateTemplate,
 };
 
 export function ResumePreview() {
@@ -69,6 +74,10 @@ export function ResumePreview() {
   const setPreviewZoom = useAppStore((s) => s.setPreviewZoom);
   const isFullscreen = useAppStore((s) => s.isFullscreen);
   const setIsFullscreen = useAppStore((s) => s.setIsFullscreen);
+  const [viewMode, setViewMode] = useState<'professional' | 'document'>('professional');
+
+  const zoomIn = () => setPreviewZoom(Math.min(previewZoom + 0.15, 2));
+  const zoomOut = () => setPreviewZoom(Math.max(previewZoom - 0.15, 0.3));
 
   if (!resume) {
     return (
@@ -78,19 +87,48 @@ export function ResumePreview() {
     );
   }
 
-  const zoomIn = () => setPreviewZoom(Math.min(previewZoom + 0.15, 2));
-  const zoomOut = () => setPreviewZoom(Math.max(previewZoom - 0.15, 0.3));
-
   const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
 
   return (
     <div className={`flex flex-col h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
       {/* Preview toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b glass-strong">
+      <div className="flex items-center gap-2 px-3 py-2 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg">
         <span className="text-xs font-medium text-muted-foreground">
           {t('preview.title', language)}
         </span>
         <div className="flex-1" />
+
+        {/* View mode toggle */}
+        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+          <button
+            onClick={() => setViewMode('professional')}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium transition-all',
+              viewMode === 'professional'
+                ? 'bg-white dark:bg-gray-700 shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Eye className="h-3 w-3" />
+            {language === 'ar' ? 'احترافي' : 'Pro'}
+          </button>
+          <button
+            onClick={() => setViewMode('document')}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium transition-all',
+              viewMode === 'document'
+                ? 'bg-white dark:bg-gray-700 shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <FileText className="h-3 w-3" />
+            {language === 'ar' ? 'مستند' : 'Doc'}
+          </button>
+        </div>
+
+        <div className="w-px h-4 bg-border" />
+
+        {/* Zoom controls */}
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -117,11 +155,7 @@ export function ResumePreview() {
           onClick={() => setIsFullscreen(!isFullscreen)}
           className="flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted/50 transition-colors"
         >
-          {isFullscreen ? (
-            <Minimize className="h-3.5 w-3.5" />
-          ) : (
-            <Maximize className="h-3.5 w-3.5" />
-          )}
+          {isFullscreen ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
         </motion.button>
         {isFullscreen && (
           <Button
@@ -137,23 +171,50 @@ export function ResumePreview() {
 
       {/* Preview content */}
       <ScrollArea className="flex-1">
-        <div className="flex items-start justify-center p-4 md:p-8">
-          <div
-            id="resume-preview"
-            data-resume-preview
-            className="origin-top transition-transform duration-300"
-            style={{ transform: `scale(${previewZoom})` }}
-          >
-            <TemplateComponent
-              data={resume.data}
-              primaryColor={resume.primaryColor}
-              fontFamily={resume.fontFamily}
-              fontSize={resume.fontSize}
-              language={resume.language}
-            />
-          </div>
-        </div>
+        <AnimatePresence mode="wait">
+          {viewMode === 'professional' ? (
+            <motion.div
+              key="professional"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="p-4 md:p-6"
+              style={{ transform: `scale(${previewZoom})`, transformOrigin: 'top center' }}
+            >
+              <ProfessionalCVPreview
+                data={resume.data}
+                primaryColor={resume.primaryColor}
+                language={resume.language}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="document"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-start justify-center p-4 md:p-8"
+            >
+              <div
+                id="resume-preview"
+                data-resume-preview
+                className="origin-top transition-transform duration-300"
+                style={{ transform: `scale(${previewZoom})` }}
+              >
+                <TemplateComponent
+                  data={resume.data}
+                  primaryColor={resume.primaryColor}
+                  fontFamily={resume.fontFamily}
+                  fontSize={resume.fontSize}
+                  language={resume.language}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </ScrollArea>
     </div>
   );
 }
+
+

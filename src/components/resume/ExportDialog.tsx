@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
@@ -19,6 +19,57 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Download, FileText, Image, Loader2, FileImage, File } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  AafiatakProTemplate,
+  ClassicTemplate,
+  ModernTemplate,
+  ExecutiveTemplate,
+  CreativeTemplate,
+  MinimalTemplate,
+  CorporateTemplate,
+  ATSTemplate,
+  MedicalTemplate,
+  EngineeringTemplate,
+  AcademicTemplate,
+  ElegantTemplate,
+  PremiumDarkTemplate,
+  LuxuryTemplate,
+  StartupTemplate,
+  ConsultantTemplate,
+  SoftwareTemplate,
+  NurseTemplate,
+  HealthcareTemplate,
+  MarketingTemplate,
+  FinanceTemplate,
+} from '@/components/templates';
+import type { TemplateProps } from '@/components/templates';
+import { createRoot } from 'react-dom/client';
+import React from 'react';
+
+const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
+  aafiatakpro: AafiatakProTemplate,
+  classic: ClassicTemplate,
+  modern: ModernTemplate,
+  executive: ExecutiveTemplate,
+  creative: CreativeTemplate,
+  minimal: MinimalTemplate,
+  corporate: CorporateTemplate,
+  ats: ATSTemplate,
+  medical: MedicalTemplate,
+  engineering: EngineeringTemplate,
+  academic: AcademicTemplate,
+  elegant: ElegantTemplate,
+  premiumdark: PremiumDarkTemplate,
+  luxury: LuxuryTemplate,
+  startup: StartupTemplate,
+  consultant: ConsultantTemplate,
+  software: SoftwareTemplate,
+  nurse: NurseTemplate,
+  healthcare: HealthcareTemplate,
+  marketing: MarketingTemplate,
+  finance: FinanceTemplate,
+  manager: CorporateTemplate,
+};
 
 interface ExportDialogProps {
   open: boolean;
@@ -41,15 +92,46 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     setProgress(10);
 
     try {
-      const previewEl = document.querySelector('[data-resume-preview]') as HTMLElement;
+      // Try to find existing preview element
+      let previewEl = document.querySelector('[data-resume-preview]') as HTMLElement;
+
       if (!previewEl) {
-        const pageEl = document.querySelector('.shadow-xl') as HTMLElement;
-        if (!pageEl) {
+        // Create a temporary hidden container and render the A4 template for export
+        setProgress(20);
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.zIndex = '-1';
+        document.body.appendChild(container);
+
+        const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
+        const root = createRoot(container);
+        root.render(
+          React.createElement(TemplateComponent, {
+            data: resume.data,
+            primaryColor: resume.primaryColor,
+            fontFamily: resume.fontFamily,
+            fontSize: resume.fontSize,
+            language: resume.language,
+          })
+        );
+
+        // Wait for render
+        await new Promise(resolve => setTimeout(resolve, 500));
+        previewEl = container.firstElementChild as HTMLElement;
+        if (!previewEl) {
+          document.body.removeChild(container);
           setGenerating(false);
           return;
         }
-        await generateFromElement(pageEl);
+
+        setProgress(30);
+        await generateFromElement(previewEl);
+        root.unmount();
+        document.body.removeChild(container);
       } else {
+        setProgress(30);
         await generateFromElement(previewEl);
       }
     } catch (error) {
@@ -61,10 +143,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   };
 
   const generateFromElement = async (element: HTMLElement) => {
-    setProgress(30);
+    setProgress(40);
 
     const html2canvas = (await import('html2canvas')).default;
-    setProgress(50);
+    setProgress(60);
 
     const canvas = await html2canvas(element, {
       scale: 2,
@@ -73,7 +155,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       backgroundColor: '#ffffff',
     });
 
-    setProgress(70);
+    setProgress(80);
 
     if (format === 'pdf') {
       const jsPDF = (await import('jspdf')).default;
@@ -89,7 +171,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       });
 
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      setProgress(90);
+      setProgress(95);
       pdf.save(`${resume.title}.pdf`);
     } else {
       const link = document.createElement('a');

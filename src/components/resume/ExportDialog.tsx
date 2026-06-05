@@ -23,6 +23,60 @@ interface ExportDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Safely capture a DOM element as a canvas using html-to-image.
+ * Falls back to html2canvas if html-to-image fails.
+ */
+async function captureElement(element: HTMLElement, scale: number = 2): Promise<HTMLCanvasElement> {
+  // --- Attempt 1: html-to-image (SVG foreignObject - supports modern CSS) ---
+  try {
+    const { toCanvas } = await import('html-to-image');
+    const canvas = await toCanvas(element, {
+      pixelRatio: scale,
+      backgroundColor: '#ffffff',
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      skipAutoScale: true,
+    });
+    if (canvas.width > 0 && canvas.height > 0) {
+      return canvas;
+    }
+  } catch (e) {
+    console.warn('html-to-image failed, trying html2canvas fallback:', e);
+  }
+
+  // --- Attempt 2: html2canvas fallback ---
+  try {
+    const html2canvas = (await import('html2canvas')).default;
+    const canvas = await html2canvas(element, {
+      scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      onclone: (clonedDoc) => {
+        // Fix opacity:0 from Framer Motion animations
+        const allElements = clonedDoc.querySelectorAll('*');
+        allElements.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          const cs = window.getComputedStyle(htmlEl);
+          if (cs.opacity === '0') htmlEl.style.opacity = '1';
+          if (cs.visibility === 'hidden') htmlEl.style.visibility = 'visible';
+        });
+      },
+    });
+    if (canvas.width > 0 && canvas.height > 0) {
+      return canvas;
+    }
+  } catch (e) {
+    console.warn('html2canvas also failed:', e);
+  }
+
+  throw new Error('All capture methods failed');
+}
+
 export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const language = useAppStore((s) => s.language);
   const resume = useCurrentResume();
@@ -48,38 +102,49 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       // ===== Step 1: Find or create the preview element to capture =====
       let captureTarget: HTMLElement | null = null;
       let usedVisiblePreview = false;
+      let parentWithTransform: HTMLElement | null = null;
+      let savedTransform = '';
+      let savedTransformOrigin = '';
 
-      // Try to find the visible professional preview in the DOM
+      // Try to find the visible professional preview
       const existingPreview = document.querySelector('[data-professional-cv]') as HTMLElement;
       if (existingPreview) {
         const style = window.getComputedStyle(existingPreview);
         if (style.display !== 'none' && style.visibility !== 'hidden' && existingPreview.offsetWidth > 0) {
           captureTarget = existingPreview;
           usedVisiblePreview = true;
-          setProgress(15);
+          setProgress(10);
+
+          // Temporarily reset any CSS transform on parent (zoom/scale interferes with capture)
+          parentWithTransform = captureTarget.closest('[style*="transform"]') as HTMLElement;
+          if (parentWithTransform) {
+            savedTransform = parentWithTransform.style.transform;
+            savedTransformOrigin = parentWithTransform.style.transformOrigin;
+            parentWithTransform.style.transform = 'none';
+            parentWithTransform.style.transformOrigin = 'top left';
+          }
         }
       }
 
-      // If visible preview not found, create a temporary off-screen container
+      // If no visible preview, render into a temp container
       if (!captureTarget) {
-        setProgress(10);
+        setProgress(8);
 
         tempContainer = document.createElement('div');
         tempContainer.id = 'export-temp-container';
-        tempContainer.style.cssText = `
-          position: fixed;
-          left: 0;
-          top: 0;
-          width: 800px;
-          z-index: -9999;
-          opacity: 1;
-          pointer-events: none;
-          background-color: #ffffff;
-          overflow: visible;
-        `;
+        tempContainer.style.cssText = [
+          'position: fixed',
+          'left: 0',
+          'top: 0',
+          'width: 800px',
+          'z-index: -9999',
+          'opacity: 1',
+          'pointer-events: none',
+          'background-color: #ffffff',
+          'overflow: visible',
+        ].join(';');
         document.body.appendChild(tempContainer);
 
-        // Render static (no animations) ProfessionalCVPreview
         tempRoot = createRoot(tempContainer);
         tempRoot.render(
           React.createElement(ProfessionalCVPreview, {
@@ -90,8 +155,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           })
         );
 
-        // Wait for React to render
-        setProgress(20);
+        // Wait for render to complete
+        setProgress(15);
         await new Promise<void>((resolve) => {
           let checks = 0;
           const checkRender = () => {
@@ -99,258 +164,124 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             const el = tempContainer!.querySelector('[data-professional-cv]');
             if (el && el.children.length > 0) {
               resolve();
-            } else if (checks < 30) {
+            } else if (checks < 40) {
               setTimeout(checkRender, 100);
             } else {
-              resolve();
+              resolve(); // proceed anyway after 4s
             }
           };
-          setTimeout(checkRender, 200);
+          setTimeout(checkRender, 300);
         });
 
-        setProgress(30);
-
-        captureTarget = tempContainer.querySelector('[data-professional-cv]') as HTMLElement;
-        if (!captureTarget) {
-          captureTarget = tempContainer.firstElementChild as HTMLElement;
-        }
+        setProgress(25);
+        captureTarget = (tempContainer.querySelector('[data-professional-cv]') || tempContainer.firstElementChild) as HTMLElement;
       }
 
       if (!captureTarget) {
-        throw new Error(language === 'ar' ? 'فشل في عرض السيرة الذاتية' : 'Failed to render resume preview');
+        throw new Error(language === 'ar' ? 'فشل في عرض السيرة الذاتية' : 'Failed to render resume');
       }
 
-      setProgress(35);
-
-      // ===== Step 2: Capture with modern-screenshot (supports modern CSS like lab(), oklch()) =====
-      const { domToPng, domToJpeg } = await import('modern-screenshot');
-      setProgress(40);
-
-      // For the visible preview, temporarily reset transform from parent
-      let parentWithTransform: HTMLElement | null = null;
-      let savedTransform = '';
-      let savedTransformOrigin = '';
-
-      if (usedVisiblePreview) {
-        parentWithTransform = captureTarget.closest('[style*="transform"]') as HTMLElement;
-        if (parentWithTransform) {
-          savedTransform = parentWithTransform.style.transform;
-          savedTransformOrigin = parentWithTransform.style.transformOrigin;
-          parentWithTransform.style.transform = 'none';
-          parentWithTransform.style.transformOrigin = 'top left';
-        }
-      }
-
-      setProgress(50);
-
-      // Capture using modern-screenshot - it handles lab(), oklch() etc.
-      const captureOptions = {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        width: captureTarget.scrollWidth,
-        height: captureTarget.scrollHeight,
-        style: {
-          transform: 'none',
-        },
-        fetchOptions: {
-          cache: 'force-cache' as RequestCache,
-        },
-      };
-
-      let canvas: HTMLCanvasElement;
-
-      if (format === 'png') {
-        // PNG - use domToPng then convert to canvas
-        const dataUrl = await domToPng(captureTarget, captureOptions);
-        setProgress(70);
-
-        // Convert data URL to canvas for further processing
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error('Failed to load captured image'));
-          img.src = dataUrl;
-        });
-
-        canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(img, 0, 0);
-
-        // Download PNG directly
-        setProgress(90);
-        const blob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob(
-            (b) => b ? resolve(b) : reject(new Error('Failed to create PNG blob')),
-            'image/png'
-          );
-        });
-
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${resume.title || 'resume'}.png`;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 1000);
-
-        setProgress(100);
-        setTimeout(() => onOpenChange(false), 600);
-        return;
-
-      } else if (format === 'jpg') {
-        // JPG - use domToJpeg
-        const dataUrl = await domToJpeg(captureTarget, { ...captureOptions, quality: 0.95 });
-        setProgress(70);
-
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error('Failed to load captured image'));
-          img.src = dataUrl;
-        });
-
-        canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d')!;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-
-        setProgress(90);
-        const blob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob(
-            (b) => b ? resolve(b) : reject(new Error('Failed to create JPG blob')),
-            'image/jpeg',
-            0.95
-          );
-        });
-
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${resume.title || 'resume'}.jpg`;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 1000);
-
-        setProgress(100);
-        setTimeout(() => onOpenChange(false), 600);
-        return;
-      }
-
-      // ===== PDF Export =====
-      // Use domToPng to capture, then convert to PDF with jsPDF
-      const dataUrl = await domToPng(captureTarget, captureOptions);
+      // ===== Step 2: Capture as Canvas =====
+      setProgress(30);
+      const canvas = await captureElement(captureTarget, 2);
       setProgress(60);
 
-      // Convert data URL to Image then to Canvas
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error('Failed to load captured image'));
-        img.src = dataUrl;
-      });
-
-      canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0);
-
-      setProgress(70);
-
-      // Check if canvas is empty
       if (canvas.width === 0 || canvas.height === 0) {
-        throw new Error(language === 'ar' ? 'فشل في التقاط الصورة' : 'Canvas capture failed - empty result');
+        throw new Error(language === 'ar' ? 'فشل في التقاط الصورة' : 'Capture produced empty result');
       }
 
-      const jsPDF = (await import('jspdf')).default;
-      setProgress(80);
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-
-      // Calculate PDF dimensions
-      const pdfWidth = paperSize === 'a4' ? 210 : 215.9;
-      const pdfHeight = paperSize === 'a4' ? 297 : 279.4;
-
-      // Scale image to fit PDF width (divide by 2 because of scale:2)
-      const actualWidth = imgWidth / 2;
-      const actualHeight = imgHeight / 2;
-      const scale = pdfWidth / actualWidth;
-      const scaledHeight = actualHeight * scale;
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: paperSize === 'a4' ? 'a4' : 'letter',
-      });
-
-      if (scaledHeight <= pdfHeight) {
-        // Single page
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, scaledHeight);
-      } else {
-        // Multi-page PDF
-        const pageCanvas = document.createElement('canvas');
-        const pageCtx = pageCanvas.getContext('2d');
-        if (!pageCtx) {
-          throw new Error('Canvas 2D context not available');
-        }
-
-        const pixelsPerMm = imgWidth / pdfWidth;
-        const pageHeightPixels = pdfHeight * pixelsPerMm;
-        let currentY = 0;
-        let pageNum = 0;
-
-        while (currentY < imgHeight) {
-          const sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
-
-          pageCanvas.width = imgWidth;
-          pageCanvas.height = sliceHeight;
-
-          pageCtx.fillStyle = '#ffffff';
-          pageCtx.fillRect(0, 0, imgWidth, sliceHeight);
-          pageCtx.drawImage(canvas, 0, currentY, imgWidth, sliceHeight, 0, 0, imgWidth, sliceHeight);
-
-          const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-          const pageScaledHeight = (sliceHeight / 2) * scale;
-
-          if (pageNum > 0) pdf.addPage();
-          pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidth, pageScaledHeight);
-
-          currentY += sliceHeight;
-          pageNum++;
-        }
-      }
-
-      setProgress(95);
-      pdf.save(`${resume.title || 'resume'}.pdf`);
-
-      // Restore parent transform if we changed it
+      // Restore parent transform
       if (parentWithTransform) {
         parentWithTransform.style.transform = savedTransform;
         parentWithTransform.style.transformOrigin = savedTransformOrigin;
       }
 
+      // ===== Step 3: Export in chosen format =====
+      if (format === 'pdf') {
+        const jsPDF = (await import('jspdf')).default;
+        setProgress(70);
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+
+        const pdfWidth = paperSize === 'a4' ? 210 : 215.9;
+        const pdfHeight = paperSize === 'a4' ? 297 : 279.4;
+
+        const actualWidth = imgWidth / 2;
+        const actualHeight = imgHeight / 2;
+        const scaleRatio = pdfWidth / actualWidth;
+        const scaledHeight = actualHeight * scaleRatio;
+
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: paperSize === 'a4' ? 'a4' : 'letter',
+        });
+
+        if (scaledHeight <= pdfHeight) {
+          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, scaledHeight);
+        } else {
+          // Multi-page
+          const pageCanvas = document.createElement('canvas');
+          const pageCtx = pageCanvas.getContext('2d')!;
+          const pixelsPerMm = imgWidth / pdfWidth;
+          const pageHeightPixels = pdfHeight * pixelsPerMm;
+          let currentY = 0;
+          let pageNum = 0;
+
+          while (currentY < imgHeight) {
+            const sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
+            pageCanvas.width = imgWidth;
+            pageCanvas.height = sliceHeight;
+            pageCtx.fillStyle = '#ffffff';
+            pageCtx.fillRect(0, 0, imgWidth, sliceHeight);
+            pageCtx.drawImage(canvas, 0, currentY, imgWidth, sliceHeight, 0, 0, imgWidth, sliceHeight);
+
+            const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+            const pageScaledHeight = (sliceHeight / 2) * scaleRatio;
+
+            if (pageNum > 0) pdf.addPage();
+            pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidth, pageScaledHeight);
+
+            currentY += sliceHeight;
+            pageNum++;
+          }
+        }
+
+        setProgress(95);
+        pdf.save(`${resume.title || 'resume'}.pdf`);
+
+      } else {
+        // PNG or JPG image export
+        setProgress(70);
+        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+        const quality = format === 'png' ? undefined : 0.95;
+
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob(
+            (b) => b ? resolve(b) : reject(new Error('Blob creation failed')),
+            mimeType,
+            quality
+          );
+        });
+
+        setProgress(90);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${resume.title || 'resume'}.${format}`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 1500);
+      }
+
       setProgress(100);
-      setTimeout(() => {
-        onOpenChange(false);
-      }, 600);
+      setTimeout(() => onOpenChange(false), 600);
 
     } catch (error: any) {
       console.error('Export error:', error);
@@ -360,17 +291,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           : `Export failed: ${error?.message || 'Unknown error'}`
       );
     } finally {
-      // Cleanup temp container
       try {
-        if (tempRoot) {
-          tempRoot.unmount();
-        }
-        if (tempContainer && tempContainer.parentNode) {
-          tempContainer.parentNode.removeChild(tempContainer);
-        }
-      } catch (e) {
-        // Ignore cleanup errors
-      }
+        if (tempRoot) tempRoot.unmount();
+        if (tempContainer?.parentNode) tempContainer.parentNode.removeChild(tempContainer);
+      } catch (_) {}
       setGenerating(false);
       setProgress(0);
     }

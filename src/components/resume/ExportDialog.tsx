@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore, useCurrentResume } from '@/lib/store';
 import { t } from '@/lib/i18n';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
-import { Download, FileText, Image, Loader2, FileImage } from 'lucide-react';
+import { Download, FileText, Image, Loader2, FileImage, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalCVPreview } from './ProfessionalCVPreview';
 import { createRoot } from 'react-dom/client';
@@ -30,57 +30,164 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const [paperSize, setPaperSize] = useState<PaperSize>('a4');
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [errorMsg, setErrorMsg] = useState('');
   const isRtl = language === 'ar';
 
   const handleExport = async () => {
     if (!resume) return;
     setGenerating(true);
-    setProgress(5);
+    setProgress(0);
+    setErrorMsg('');
+
+    let tempContainer: HTMLElement | null = null;
+    let tempRoot: ReturnType<typeof createRoot> | null = null;
 
     try {
-      setProgress(10);
+      setProgress(5);
 
-      // Create a hidden container to render the professional preview
-      const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.zIndex = '-1';
-      container.style.width = '800px'; // Fixed width for consistent rendering
-      container.style.backgroundColor = '#f8fafc'; // Match the preview bg
-      document.body.appendChild(container);
+      // ===== Step 1: Find or create the preview element to capture =====
+      let captureTarget: HTMLElement | null = null;
+      let usedVisiblePreview = false;
 
-      setProgress(20);
+      // Try to find the visible professional preview in the DOM
+      const existingPreview = document.querySelector('[data-professional-cv]') as HTMLElement;
+      if (existingPreview) {
+        // Check if it's actually visible (not display:none)
+        const style = window.getComputedStyle(existingPreview);
+        if (style.display !== 'none' && style.visibility !== 'hidden' && existingPreview.offsetWidth > 0) {
+          captureTarget = existingPreview;
+          usedVisiblePreview = true;
+          setProgress(15);
+        }
+      }
 
-      // Render ProfessionalCVPreview into the hidden container
-      const root = createRoot(container);
-      root.render(
-        React.createElement(ProfessionalCVPreview, {
-          data: resume.data,
-          primaryColor: resume.primaryColor,
-          language: resume.language,
-        })
-      );
+      // If visible preview not found, create a temporary off-screen container
+      if (!captureTarget) {
+        setProgress(10);
 
-      // Wait for render to complete
-      await new Promise(resolve => setTimeout(resolve, 800));
+        tempContainer = document.createElement('div');
+        tempContainer.id = 'export-temp-container';
+        tempContainer.style.cssText = `
+          position: fixed;
+          left: 0;
+          top: 0;
+          width: 800px;
+          z-index: -9999;
+          opacity: 1;
+          pointer-events: none;
+          background-color: #f8fafc;
+          overflow: visible;
+        `;
+        document.body.appendChild(tempContainer);
+
+        // Render static (no animations) ProfessionalCVPreview
+        tempRoot = createRoot(tempContainer);
+        tempRoot.render(
+          React.createElement(ProfessionalCVPreview, {
+            data: resume.data,
+            primaryColor: resume.primaryColor,
+            language: resume.language,
+            disableAnimations: true,
+          })
+        );
+
+        // Wait for React to render - use multiple checks
+        setProgress(20);
+        await new Promise<void>((resolve) => {
+          let checks = 0;
+          const checkRender = () => {
+            checks++;
+            const el = tempContainer!.querySelector('[data-professional-cv]');
+            if (el && el.children.length > 0) {
+              resolve();
+            } else if (checks < 30) {
+              setTimeout(checkRender, 100);
+            } else {
+              // Fallback: proceed anyway after 3 seconds
+              resolve();
+            }
+          };
+          setTimeout(checkRender, 200);
+        });
+
+        setProgress(30);
+
+        // Find the rendered professional CV in the temp container
+        captureTarget = tempContainer.querySelector('[data-professional-cv]') as HTMLElement;
+        if (!captureTarget) {
+          captureTarget = tempContainer.firstElementChild as HTMLElement;
+        }
+      }
+
+      if (!captureTarget) {
+        throw new Error(language === 'ar' ? 'فشل في عرض السيرة الذاتية' : 'Failed to render resume preview');
+      }
+
+      setProgress(35);
+
+      // ===== Step 2: Capture with html2canvas =====
+      const html2canvas = (await import('html2canvas')).default;
       setProgress(40);
 
-      // Capture with html2canvas
-      const html2canvas = (await import('html2canvas')).default;
+      // For the visible preview, temporarily reset transform from parent
+      let parentTransform = '';
+      let parentTransformOrigin = '';
+      const parentWithTransform = usedVisiblePreview
+        ? captureTarget.closest('[style*="transform"]') as HTMLElement
+        : null;
+
+      if (parentWithTransform) {
+        parentTransform = parentWithTransform.style.transform;
+        parentTransformOrigin = parentWithTransform.style.transformOrigin;
+        parentWithTransform.style.transform = 'none';
+        parentWithTransform.style.transformOrigin = 'top left';
+      }
+
       setProgress(50);
 
-      const canvas = await html2canvas(container, {
+      const canvas = await html2canvas(captureTarget, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: 800,
         logging: false,
+        width: captureTarget.scrollWidth,
+        height: captureTarget.scrollHeight,
+        windowWidth: 800,
+        useCORS: true,
+        onclone: (clonedDoc) => {
+          // Ensure all elements in the clone are visible (override any animation opacity:0)
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const computedStyle = window.getComputedStyle(htmlEl);
+            if (computedStyle.opacity === '0') {
+              htmlEl.style.opacity = '1';
+            }
+            if (computedStyle.visibility === 'hidden') {
+              htmlEl.style.visibility = 'visible';
+            }
+            if (computedStyle.display === 'none') {
+              htmlEl.style.display = 'block';
+            }
+          });
+        },
       });
+
+      // Restore parent transform if we changed it
+      if (parentWithTransform) {
+        parentWithTransform.style.transform = parentTransform;
+        parentWithTransform.style.transformOrigin = parentTransformOrigin;
+      }
 
       setProgress(70);
 
+      // Check if canvas is empty
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error(language === 'ar' ? 'فشل في التقاط الصورة' : 'Canvas capture failed - empty result');
+      }
+
+      // ===== Step 3: Generate output =====
       if (format === 'pdf') {
         const jsPDF = (await import('jspdf')).default;
         setProgress(80);
@@ -89,13 +196,15 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         const imgWidth = canvas.width;
         const imgHeight = canvas.height;
 
-        // Calculate PDF dimensions maintaining aspect ratio
+        // Calculate PDF dimensions
         const pdfWidth = paperSize === 'a4' ? 210 : 215.9;
         const pdfHeight = paperSize === 'a4' ? 297 : 279.4;
 
-        // Scale image to fit PDF width
-        const scale = pdfWidth / (imgWidth / 2); // divide by 2 because of scale:2
-        const scaledHeight = (imgHeight / 2) * scale;
+        // Scale image to fit PDF width (divide by 2 because of html2canvas scale:2)
+        const actualWidth = imgWidth / 2;
+        const actualHeight = imgHeight / 2;
+        const scale = pdfWidth / actualWidth;
+        const scaledHeight = actualHeight * scale;
 
         const pdf = new jsPDF({
           orientation: 'portrait',
@@ -103,15 +212,16 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           format: paperSize === 'a4' ? 'a4' : 'letter',
         });
 
-        // If content is taller than one page, split across pages
         if (scaledHeight <= pdfHeight) {
           // Single page
           pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, scaledHeight);
         } else {
-          // Multi-page
+          // Multi-page PDF
           const pageCanvas = document.createElement('canvas');
           const pageCtx = pageCanvas.getContext('2d');
-          if (!pageCtx) { setGenerating(false); return; }
+          if (!pageCtx) {
+            throw new Error('Canvas 2D context not available');
+          }
 
           const pixelsPerMm = imgWidth / pdfWidth;
           const pageHeightPixels = pdfHeight * pixelsPerMm;
@@ -140,24 +250,65 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         }
 
         setProgress(95);
-        pdf.save(`${resume.title}.pdf`);
+        pdf.save(`${resume.title || 'resume'}.pdf`);
       } else {
-        // PNG or JPG - just download the canvas
+        // PNG or JPG image export
+        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+        const quality = format === 'png' ? undefined : 0.95;
+
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob(
+            (b) => {
+              if (b) resolve(b);
+              else reject(new Error('Failed to create image blob'));
+            },
+            mimeType,
+            quality
+          );
+        });
+
+        setProgress(90);
+
+        // Download using blob URL (more reliable than data URL)
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `${resume.title}.${format}`;
-        link.href = canvas.toDataURL(format === 'png' ? 'image/png' : 'image/jpeg', 0.95);
+        link.href = url;
+        link.download = `${resume.title || 'resume'}.${format}`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
         link.click();
+
+        // Cleanup after download starts
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 1000);
       }
 
-      // Cleanup
-      root.unmount();
-      document.body.removeChild(container);
-
       setProgress(100);
-      setTimeout(() => onOpenChange(false), 500);
-    } catch (error) {
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 600);
+
+    } catch (error: any) {
       console.error('Export error:', error);
+      setErrorMsg(
+        language === 'ar'
+          ? `حدث خطأ أثناء التصدير: ${error?.message || 'خطأ غير معروف'}`
+          : `Export failed: ${error?.message || 'Unknown error'}`
+      );
     } finally {
+      // Cleanup temp container
+      try {
+        if (tempRoot) {
+          tempRoot.unmount();
+        }
+        if (tempContainer && tempContainer.parentNode) {
+          tempContainer.parentNode.removeChild(tempContainer);
+        }
+      } catch (e) {
+        // Ignore cleanup errors
+      }
       setGenerating(false);
       setProgress(0);
     }
@@ -225,8 +376,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               className="grid grid-cols-2 gap-2 sm:gap-3"
             >
               {[
-                { value: 'a4', label: 'A4', desc: '210 × 297 mm' },
-                { value: 'letter', label: 'Letter', desc: '216 × 279 mm' },
+                { value: 'a4', label: 'A4', desc: '210 x 297 mm' },
+                { value: 'letter', label: 'Letter', desc: '216 x 279 mm' },
               ].map((item) => (
                 <Label
                   key={item.value}
@@ -244,6 +395,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               ))}
             </RadioGroup>
           </div>
+
+          {/* Error message */}
+          {errorMsg && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <p className="text-xs">{errorMsg}</p>
+            </div>
+          )}
 
           {/* Progress */}
           {generating && (

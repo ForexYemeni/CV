@@ -99,10 +99,13 @@ interface ProfessionalCVPreviewProps {
   data: ResumeData;
   primaryColor: string;
   language: LangType;
+  /** When true, skip Framer Motion animations and render plain divs (for PDF/image export) */
+  disableAnimations?: boolean;
 }
 
-export function ProfessionalCVPreview({ data, primaryColor, language }: ProfessionalCVPreviewProps) {
+export function ProfessionalCVPreview({ data, primaryColor, language, disableAnimations }: ProfessionalCVPreviewProps) {
   const isR = language === 'ar';
+  const isStatic = disableAnimations || false;
   const p = data.personalInfo;
   const yearsExp = computeYears(data.experience);
   const completedJobs = data.experience.length;
@@ -126,18 +129,24 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
     </div>
   );
 
+  // Animated wrapper - conditionally uses motion.div or plain div
+  const AContainer = isStatic ? 'div' : motion.div;
+  const AItem = isStatic ? 'div' : motion.div;
+
+  // Helper to spread animation props only when not static
+  const containerAnimProps = isStatic ? {} : { variants: containerVariants, initial: "hidden" as const, animate: "visible" as const };
+  const itemAnimProps = isStatic ? {} : { variants: itemVariants };
+
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
+    <AContainer
       className="w-full max-w-lg mx-auto space-y-3 sm:space-y-4 pb-6"
       dir={isR ? 'rtl' : 'ltr'}
       id="professional-cv-content"
       data-professional-cv
+      {...containerAnimProps}
     >
       {/* ============ PROFILE HEADER ============ */}
-      <motion.div variants={itemVariants} className={cardClass}>
+      <AItem className={cardClass} {...itemAnimProps}>
         {/* Gradient banner */}
         <div className="relative h-20 sm:h-28" style={{ background: `linear-gradient(135deg, ${primaryColor}30, ${primaryColor}15, transparent)` }}>
           <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at top left, ${primaryColor}20, transparent 70%)` }} />
@@ -145,7 +154,7 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
 
         <div className="relative px-4 sm:px-5 pb-4 sm:pb-5 -mt-12 sm:-mt-14">
           {/* Avatar */}
-          <motion.div variants={itemVariants} className="flex flex-col items-center text-center">
+          <AItem className="flex flex-col items-center text-center" {...itemAnimProps}>
             <div className="relative mb-2 sm:mb-3">
               <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}80, ${primaryColor}40)` }}>
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-3 sm:border-4 border-white dark:border-gray-900 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-800">
@@ -159,20 +168,20 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
                 </div>
               </div>
             </div>
-          </motion.div>
+          </AItem>
 
           {/* Name + Title */}
-          <motion.div variants={itemVariants} className="text-center mb-2 sm:mb-3">
+          <AItem className="text-center mb-2 sm:mb-3" {...itemAnimProps}>
             <h1 className="text-lg sm:text-xl font-bold flex items-center justify-center gap-1.5">
               {p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}
             </h1>
             {p.jobTitle && (
               <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: primaryColor }}>{p.jobTitle}</p>
             )}
-          </motion.div>
+          </AItem>
 
           {/* Location + Experience */}
-          <motion.div variants={itemVariants} className="flex items-center justify-center gap-3 sm:gap-4 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">
+          <AItem className="flex items-center justify-center gap-3 sm:gap-4 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-3" {...itemAnimProps}>
             {(p.city || p.country) && (
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: primaryColor + '80' }} />
@@ -185,10 +194,10 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
                 {yearsExp} {language === 'ar' ? 'سنة خبرة' : 'years exp'}
               </span>
             )}
-          </motion.div>
+          </AItem>
 
           {/* Quick badges */}
-          <motion.div variants={itemVariants} className="flex flex-wrap justify-center gap-1 sm:gap-1.5">
+          <AItem className="flex flex-wrap justify-center gap-1 sm:gap-1.5" {...itemAnimProps}>
             {completedJobs > 0 && (
               <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
@@ -207,23 +216,20 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
                 {data.languages.length} {language === 'ar' ? 'لغة' : 'lang'}
               </span>
             )}
-          </motion.div>
+          </AItem>
         </div>
-      </motion.div>
+      </AItem>
 
       {/* ============ STATISTICS ============ */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-2 sm:gap-3">
+      <AItem className="grid grid-cols-2 gap-2 sm:gap-3" {...itemAnimProps}>
         {[
           { icon: <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />, value: completedJobs, label: language === 'ar' ? 'خبرة عملية' : 'Work Exp', bg: 'bg-emerald-500/10' },
           { icon: <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />, value: skillCount, label: language === 'ar' ? 'مهارة' : 'Skills', bg: 'bg-amber-500/10' },
           { icon: <Clock className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: primaryColor }} />, value: yearsExp, label: language === 'ar' ? 'سنة خبرة' : 'Years Exp', bg: '', customBg: primaryColor + '10' },
           { icon: <Award className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-violet-400" />, value: data.certifications.length, label: language === 'ar' ? 'شهادة' : 'Certs', bg: 'bg-violet-500/10' },
         ].map((stat, i) => (
-          <motion.div
+          <div
             key={i}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 + i * 0.05 }}
             className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-3 sm:p-4 shadow-sm"
           >
             <div className="flex items-center gap-2 sm:gap-3">
@@ -238,25 +244,25 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
                 <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
               </div>
             </div>
-          </motion.div>
+          </div>
         ))}
-      </motion.div>
+      </AItem>
 
       {/* ============ BIO / SUMMARY ============ */}
       {p.summary && (
-        <motion.div variants={itemVariants} className={cardClass}>
+        <AItem className={cardClass} {...itemAnimProps}>
           <SectionHeader icon={<User size={12} />} title={language === 'ar' ? 'نبذة مهنية' : 'Professional Summary'} />
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
               {p.summary}
             </p>
           </div>
-        </motion.div>
+        </AItem>
       )}
 
       {/* ============ SKILLS ============ */}
       {data.skills.length > 0 && (
-        <motion.div variants={itemVariants} className={cardClass}>
+        <AItem className={cardClass} {...itemAnimProps}>
           <SectionHeader icon={<Sparkles size={12} />} title={language === 'ar' ? 'المهارات' : 'Skills'} />
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
             {data.skills.map((sk, index) => {
@@ -282,12 +288,12 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
               );
             })}
           </div>
-        </motion.div>
+        </AItem>
       )}
 
       {/* ============ EXPERIENCE ============ */}
       {data.experience.length > 0 && (
-        <motion.div variants={itemVariants} className={cardClass}>
+        <AItem className={cardClass} {...itemAnimProps}>
           <SectionHeader icon={<Briefcase size={12} />} title={language === 'ar' ? 'الخبرات العملية' : 'Work Experience'} />
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
             <div className="relative">
@@ -342,12 +348,12 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
               </div>
             </div>
           </div>
-        </motion.div>
+        </AItem>
       )}
 
       {/* ============ EDUCATION ============ */}
       {data.education.length > 0 && (
-        <motion.div variants={itemVariants} className={cardClass}>
+        <AItem className={cardClass} {...itemAnimProps}>
           <SectionHeader icon={<GraduationCap size={12} />} title={language === 'ar' ? 'المؤهلات التعليمية' : 'Education'} />
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
             {data.education.map((edu) => (
@@ -375,12 +381,12 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
               </div>
             ))}
           </div>
-        </motion.div>
+        </AItem>
       )}
 
       {/* ============ CERTIFICATIONS ============ */}
       {data.certifications.length > 0 && (
-        <motion.div variants={itemVariants} className={cardClass}>
+        <AItem className={cardClass} {...itemAnimProps}>
           <SectionHeader icon={<Award size={12} />} title={language === 'ar' ? 'الشهادات والدورات' : 'Certifications'} />
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
@@ -417,12 +423,12 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
               })}
             </div>
           </div>
-        </motion.div>
+        </AItem>
       )}
 
       {/* ============ LANGUAGES ============ */}
       {data.languages.length > 0 && (
-        <motion.div variants={itemVariants} className={cardClass}>
+        <AItem className={cardClass} {...itemAnimProps}>
           <SectionHeader icon={<Globe2 size={12} />} title={language === 'ar' ? 'اللغات' : 'Languages'} />
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
             {data.languages.map((lang) => {
@@ -453,12 +459,12 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
               );
             })}
           </div>
-        </motion.div>
+        </AItem>
       )}
 
       {/* ============ PROJECTS ============ */}
       {data.projects.length > 0 && (
-        <motion.div variants={itemVariants} className={cardClass}>
+        <AItem className={cardClass} {...itemAnimProps}>
           <SectionHeader icon={<FolderKanban size={12} />} title={language === 'ar' ? 'المشاريع' : 'Projects'} />
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2 sm:space-y-3">
             {data.projects.map((proj) => (
@@ -493,12 +499,12 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
               </div>
             ))}
           </div>
-        </motion.div>
+        </AItem>
       )}
 
       {/* ============ CONTACT INFO ============ */}
       {(p.email || p.phone || p.website || p.linkedin || p.github || p.address) && (
-        <motion.div variants={itemVariants} className={cardClass}>
+        <AItem className={cardClass} {...itemAnimProps}>
           <SectionHeader icon={<Phone size={12} />} title={language === 'ar' ? 'معلومات التواصل' : 'Contact'} />
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
@@ -540,8 +546,8 @@ export function ProfessionalCVPreview({ data, primaryColor, language }: Professi
               )}
             </div>
           </div>
-        </motion.div>
+        </AItem>
       )}
-    </motion.div>
+    </AContainer>
   );
 }

@@ -32,10 +32,12 @@ export default function Home() {
     }
   };
 
+  const isEditorLike = ['editor'].includes(currentView);
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={isEditorLike ? 'h-dvh flex flex-col bg-background overflow-hidden' : 'min-h-screen flex flex-col bg-background'}>
       {currentView !== 'landing' && <AppHeader />}
-      <main className="flex-1">
+      <main className={isEditorLike ? 'flex-1 min-h-0 overflow-hidden' : 'flex-1'}>
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView}
@@ -43,6 +45,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
+            className={isEditorLike ? 'h-full' : ''}
           >
             {renderView()}
           </motion.div>

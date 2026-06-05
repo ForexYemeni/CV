@@ -120,13 +120,14 @@ export function AppHeader() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full transition-all duration-300',
-        scrolled
+        'shrink-0 z-50 w-full transition-all duration-300',
+        currentView === 'editor' ? 'relative' : 'sticky top-0',
+        scrolled || currentView === 'editor'
           ? 'glass-strong shadow-premium'
           : 'bg-background/80 backdrop-blur-sm'
       )}
     >
-      <div className="flex h-16 items-center px-4 md:px-6 gap-3">
+      <div className="flex h-14 sm:h-16 items-center px-3 sm:px-4 md:px-6 gap-2 sm:gap-3">
         {/* Mobile hamburger */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>

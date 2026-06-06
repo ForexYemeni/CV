@@ -15,8 +15,28 @@ import { Progress } from '@/components/ui/progress';
 import { Download, FileText, Image, Loader2, FileImage, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalCVPreview } from './ProfessionalCVPreview';
+import {
+  AafiatakProTemplate, ClassicTemplate, ModernTemplate, ExecutiveTemplate,
+  CreativeTemplate, MinimalTemplate, CorporateTemplate, ATSTemplate,
+  MedicalTemplate, EngineeringTemplate, AcademicTemplate, ElegantTemplate,
+  PremiumDarkTemplate, LuxuryTemplate, StartupTemplate, ConsultantTemplate,
+  SoftwareTemplate, NurseTemplate, HealthcareTemplate, MarketingTemplate,
+  FinanceTemplate,
+} from '@/components/templates';
+import type { TemplateProps } from '@/components/templates';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
+
+const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
+  aafiatakpro: AafiatakProTemplate, classic: ClassicTemplate, modern: ModernTemplate,
+  executive: ExecutiveTemplate, creative: CreativeTemplate, minimal: MinimalTemplate,
+  corporate: CorporateTemplate, ats: ATSTemplate, medical: MedicalTemplate,
+  engineering: EngineeringTemplate, academic: AcademicTemplate, elegant: ElegantTemplate,
+  premiumdark: PremiumDarkTemplate, luxury: LuxuryTemplate, startup: StartupTemplate,
+  consultant: ConsultantTemplate, software: SoftwareTemplate, nurse: NurseTemplate,
+  healthcare: HealthcareTemplate, marketing: MarketingTemplate, finance: FinanceTemplate,
+  manager: CorporateTemplate,
+};
 
 interface ExportDialogProps {
   open: boolean;
@@ -24,11 +44,11 @@ interface ExportDialogProps {
 }
 
 /**
- * Safely capture a DOM element as a canvas using html-to-image.
- * Falls back to html2canvas if html-to-image fails.
+ * Safely capture a DOM element as a canvas.
+ * Uses html-to-image first (supports modern CSS), falls back to html2canvas.
  */
 async function captureElement(element: HTMLElement, scale: number = 2): Promise<HTMLCanvasElement> {
-  // --- Attempt 1: html-to-image (SVG foreignObject - supports modern CSS) ---
+  // Attempt 1: html-to-image (SVG foreignObject - browser renders CSS natively)
   try {
     const { toCanvas } = await import('html-to-image');
     const canvas = await toCanvas(element, {
@@ -38,14 +58,12 @@ async function captureElement(element: HTMLElement, scale: number = 2): Promise<
       height: element.scrollHeight,
       skipAutoScale: true,
     });
-    if (canvas.width > 0 && canvas.height > 0) {
-      return canvas;
-    }
+    if (canvas.width > 0 && canvas.height > 0) return canvas;
   } catch (e) {
-    console.warn('html-to-image failed, trying html2canvas fallback:', e);
+    console.warn('html-to-image failed, trying html2canvas:', e);
   }
 
-  // --- Attempt 2: html2canvas fallback ---
+  // Attempt 2: html2canvas fallback
   try {
     const html2canvas = (await import('html2canvas')).default;
     const canvas = await html2canvas(element, {
@@ -57,7 +75,6 @@ async function captureElement(element: HTMLElement, scale: number = 2): Promise<
       width: element.scrollWidth,
       height: element.scrollHeight,
       onclone: (clonedDoc) => {
-        // Fix opacity:0 from Framer Motion animations
         const allElements = clonedDoc.querySelectorAll('*');
         allElements.forEach((el) => {
           const htmlEl = el as HTMLElement;
@@ -67,14 +84,56 @@ async function captureElement(element: HTMLElement, scale: number = 2): Promise<
         });
       },
     });
-    if (canvas.width > 0 && canvas.height > 0) {
-      return canvas;
-    }
+    if (canvas.width > 0 && canvas.height > 0) return canvas;
   } catch (e) {
     console.warn('html2canvas also failed:', e);
   }
 
   throw new Error('All capture methods failed');
+}
+
+/**
+ * Find a safe Y position to break a page - avoid cutting through text.
+ * Looks for whitespace gaps between sections by scanning the canvas pixels.
+ */
+function findSafeBreakPoint(
+  canvas: HTMLCanvasElement,
+  idealY: number,
+  searchRange: number = 40
+): number {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return idealY;
+
+  const width = canvas.width;
+  const startY = Math.max(0, idealY - searchRange);
+  const endY = Math.min(canvas.height, idealY + searchRange);
+
+  // Scan rows looking for one that's mostly white (gap between sections)
+  let bestY = idealY;
+  let bestScore = Infinity;
+
+  for (let y = startY; y < endY; y++) {
+    const rowData = ctx.getImageData(0, y, width, 1).data;
+    let nonWhitePixels = 0;
+    // Sample every 4th pixel for performance
+    for (let x = 0; x < width; x += 4) {
+      const idx = x * 4;
+      const r = rowData[idx], g = rowData[idx + 1], b = rowData[idx + 2];
+      // Count pixels that are NOT near-white
+      if (r < 240 || g < 240 || b < 240) {
+        nonWhitePixels++;
+      }
+    }
+
+    // Lower non-white pixel count = better break point (whitespace gap)
+    const score = nonWhitePixels + Math.abs(y - idealY) * 0.5;
+    if (score < bestScore) {
+      bestScore = score;
+      bestY = y;
+    }
+  }
+
+  return bestY;
 }
 
 export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
@@ -99,6 +158,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     try {
       setProgress(5);
 
+      const isAafiatakPro = resume.template === 'aafiatakpro';
+
       // ===== Step 1: Find or create the preview element to capture =====
       let captureTarget: HTMLElement | null = null;
       let usedVisiblePreview = false;
@@ -106,8 +167,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       let savedTransform = '';
       let savedTransformOrigin = '';
 
-      // Try to find the visible professional preview
-      const existingPreview = document.querySelector('[data-professional-cv]') as HTMLElement;
+      // Try to find the visible preview in the DOM
+      const existingPreview = document.querySelector('[data-resume-preview]') as HTMLElement;
       if (existingPreview) {
         const style = window.getComputedStyle(existingPreview);
         if (style.display !== 'none' && style.visibility !== 'hidden' && existingPreview.offsetWidth > 0) {
@@ -146,14 +207,30 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         document.body.appendChild(tempContainer);
 
         tempRoot = createRoot(tempContainer);
-        tempRoot.render(
-          React.createElement(ProfessionalCVPreview, {
-            data: resume.data,
-            primaryColor: resume.primaryColor,
-            language: resume.language,
-            disableAnimations: true,
-          })
-        );
+
+        if (isAafiatakPro) {
+          // Render ProfessionalCVPreview for AafiatakPro
+          tempRoot.render(
+            React.createElement(ProfessionalCVPreview, {
+              data: resume.data,
+              primaryColor: resume.primaryColor,
+              language: resume.language,
+              disableAnimations: true,
+            })
+          );
+        } else {
+          // Render the selected template
+          const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
+          tempRoot.render(
+            React.createElement(TemplateComponent, {
+              data: resume.data,
+              primaryColor: resume.primaryColor,
+              fontFamily: resume.fontFamily,
+              fontSize: resume.fontSize,
+              language: resume.language,
+            })
+          );
+        }
 
         // Wait for render to complete
         setProgress(15);
@@ -161,20 +238,20 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           let checks = 0;
           const checkRender = () => {
             checks++;
-            const el = tempContainer!.querySelector('[data-professional-cv]');
+            const el = tempContainer!.firstElementChild;
             if (el && el.children.length > 0) {
               resolve();
             } else if (checks < 40) {
               setTimeout(checkRender, 100);
             } else {
-              resolve(); // proceed anyway after 4s
+              resolve();
             }
           };
           setTimeout(checkRender, 300);
         });
 
         setProgress(25);
-        captureTarget = (tempContainer.querySelector('[data-professional-cv]') || tempContainer.firstElementChild) as HTMLElement;
+        captureTarget = tempContainer.firstElementChild as HTMLElement;
       }
 
       if (!captureTarget) {
@@ -184,7 +261,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       // ===== Step 2: Capture as Canvas =====
       setProgress(30);
       const canvas = await captureElement(captureTarget, 2);
-      setProgress(60);
+      setProgress(55);
 
       if (canvas.width === 0 || canvas.height === 0) {
         throw new Error(language === 'ar' ? 'فشل في التقاط الصورة' : 'Capture produced empty result');
@@ -199,16 +276,15 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       // ===== Step 3: Export in chosen format =====
       if (format === 'pdf') {
         const jsPDF = (await import('jspdf')).default;
-        setProgress(70);
+        setProgress(65);
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const imgWidth = canvas.width;
         const imgHeight = canvas.height;
 
         const pdfWidth = paperSize === 'a4' ? 210 : 215.9;
         const pdfHeight = paperSize === 'a4' ? 297 : 279.4;
 
-        const actualWidth = imgWidth / 2;
+        const actualWidth = imgWidth / 2; // divide by 2 (scale:2)
         const actualHeight = imgHeight / 2;
         const scaleRatio = pdfWidth / actualWidth;
         const scaledHeight = actualHeight * scaleRatio;
@@ -220,29 +296,61 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         });
 
         if (scaledHeight <= pdfHeight) {
+          // Single page - simple case
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
           pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, scaledHeight);
         } else {
-          // Multi-page
+          // Multi-page PDF with smart page breaks
           const pageCanvas = document.createElement('canvas');
           const pageCtx = pageCanvas.getContext('2d')!;
           const pixelsPerMm = imgWidth / pdfWidth;
           const pageHeightPixels = pdfHeight * pixelsPerMm;
+          // Leave a small margin at bottom of each page for cleaner breaks
+          const usablePageHeight = pageHeightPixels - (10 * pixelsPerMm); // 10mm bottom margin
+
           let currentY = 0;
           let pageNum = 0;
 
           while (currentY < imgHeight) {
-            const sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
+            let sliceHeight: number;
+
+            if (pageNum === 0) {
+              // First page: use full usable height
+              sliceHeight = Math.min(usablePageHeight, imgHeight - currentY);
+            } else {
+              // Subsequent pages: use full height minus top margin
+              sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
+            }
+
+            // For all pages except the last, find a safe break point
+            if (currentY + sliceHeight < imgHeight) {
+              const safeY = findSafeBreakPoint(canvas, currentY + sliceHeight, 50);
+              sliceHeight = safeY - currentY;
+              if (sliceHeight <= 0) sliceHeight = usablePageHeight; // fallback
+            }
+
+            sliceHeight = Math.min(sliceHeight, imgHeight - currentY);
+            if (sliceHeight <= 0) break;
+
             pageCanvas.width = imgWidth;
             pageCanvas.height = sliceHeight;
+
+            // White background
             pageCtx.fillStyle = '#ffffff';
             pageCtx.fillRect(0, 0, imgWidth, sliceHeight);
+
+            // Draw the slice
             pageCtx.drawImage(canvas, 0, currentY, imgWidth, sliceHeight, 0, 0, imgWidth, sliceHeight);
 
             const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
             const pageScaledHeight = (sliceHeight / 2) * scaleRatio;
 
             if (pageNum > 0) pdf.addPage();
-            pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidth, pageScaledHeight);
+
+            // Add image with small margins for professional look
+            const topMargin = pageNum === 0 ? 0 : 5; // 5mm top margin on continued pages
+            const bottomMargin = (currentY + sliceHeight < imgHeight) ? 5 : 0; // 5mm bottom if more pages
+            pdf.addImage(pageImgData, 'JPEG', 0, topMargin, pdfWidth, pageScaledHeight);
 
             currentY += sliceHeight;
             pageNum++;
@@ -311,7 +419,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             <div>
               <span className="text-sm sm:text-base">{language === 'ar' ? 'تصدير السيرة الذاتية' : 'Export Resume'}</span>
               <DialogDescription className="text-[10px] sm:text-xs mt-0.5">
-                {language === 'ar' ? 'يتم التصدير بنفس التصميم الاحترافي' : 'Exports exactly as shown in preview'}
+                {language === 'ar' ? 'يتم التصدير بنفس تصميم القالب المختار' : 'Exports using the selected template design'}
               </DialogDescription>
             </div>
           </DialogTitle>

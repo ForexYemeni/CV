@@ -139,7 +139,7 @@ export function ProfessionalCVPreview({ data, primaryColor, language, disableAni
 
   return (
     <AContainer
-      className="w-full max-w-lg mx-auto space-y-3 sm:space-y-4 pb-6"
+      className="w-full mx-auto space-y-3 sm:space-y-4 pb-6"
       dir={isR ? 'rtl' : 'ltr'}
       id="professional-cv-content"
       data-professional-cv

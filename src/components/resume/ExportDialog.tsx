@@ -48,6 +48,11 @@ const A4_WIDTH_PX = 794;
 /** Letter width in pixels at 96 DPI: 215.9mm * 96 / 25.4 ≈ 816px */
 const LETTER_WIDTH_PX = 816;
 
+/** PDF margins in mm - professional resume standard */
+const PDF_MARGIN_MM = 8;
+/** PDF margins in pixels at 96 DPI */
+const PDF_MARGIN_PX = Math.round(PDF_MARGIN_MM * 96 / 25.4); // ≈ 30px
+
 /**
  * Safely capture a DOM element as a canvas.
  * Uses html-to-image first (supports modern CSS), falls back to html2canvas.
@@ -166,115 +171,93 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
       // Determine the A4-correct width for this paper size
       const targetWidthPx = paperSize === 'a4' ? A4_WIDTH_PX : LETTER_WIDTH_PX;
+      // Content width = full page width minus margins on both sides
+      const contentWidthPx = targetWidthPx - (PDF_MARGIN_PX * 2);
 
-      // ===== Step 1: Find or create the preview element to capture =====
-      let captureTarget: HTMLElement | null = null;
-      let parentWithTransform: HTMLElement | null = null;
-      let savedTransform = '';
-      let savedTransformOrigin = '';
+      // ===== Step 1: Create a dedicated export container =====
+      // Always use a temp container for reliable, consistent exports
+      tempContainer = document.createElement('div');
+      tempContainer.id = 'export-temp-container';
+      tempContainer.style.cssText = [
+        'position: fixed',
+        'left: 0',
+        'top: 0',
+        `width: ${contentWidthPx}px`,
+        `padding: ${PDF_MARGIN_PX}px`,
+        'z-index: -9999',
+        'opacity: 1',
+        'pointer-events: none',
+        'background-color: #ffffff',
+        'overflow: visible',
+        'box-sizing: content-box', // padding adds to the width for total A4 size
+      ].join(';');
+      document.body.appendChild(tempContainer);
 
-      // Try to find the visible preview in the DOM
-      const existingPreview = document.querySelector('[data-resume-preview]') as HTMLElement;
-      if (existingPreview) {
-        const style = window.getComputedStyle(existingPreview);
-        if (style.display !== 'none' && style.visibility !== 'hidden' && existingPreview.offsetWidth > 0) {
-          captureTarget = existingPreview;
-          setProgress(10);
+      setProgress(5);
 
-          // Temporarily reset any CSS transform on parent (zoom/scale interferes with capture)
-          parentWithTransform = captureTarget.closest('[style*="transform"]') as HTMLElement;
-          if (parentWithTransform) {
-            savedTransform = parentWithTransform.style.transform;
-            savedTransformOrigin = parentWithTransform.style.transformOrigin;
-            parentWithTransform.style.transform = 'none';
-            parentWithTransform.style.transformOrigin = 'top left';
+      tempRoot = createRoot(tempContainer);
+
+      // Render the selected template into the export container
+      const isAafiatakPro = resume.template === 'aafiatakpro';
+      const TemplateComponent = TEMPLATE_MAP[resume.template];
+
+      if (isAafiatakPro || !TemplateComponent) {
+        tempRoot.render(
+          React.createElement(ProfessionalCVPreview, {
+            data: resume.data,
+            primaryColor: resume.primaryColor,
+            language: resume.language,
+            disableAnimations: true,
+          })
+        );
+      } else {
+        tempRoot.render(
+          React.createElement(TemplateComponent, {
+            data: resume.data,
+            primaryColor: resume.primaryColor,
+            fontFamily: resume.fontFamily,
+            fontSize: resume.fontSize,
+            language: resume.language,
+          })
+        );
+      }
+
+      // Wait for render to complete
+      setProgress(10);
+      await new Promise<void>((resolve) => {
+        let checks = 0;
+        const checkRender = () => {
+          checks++;
+          const el = tempContainer!.firstElementChild;
+          if (el && el.children.length > 0) {
+            resolve();
+          } else if (checks < 40) {
+            setTimeout(checkRender, 100);
+          } else {
+            resolve();
           }
+        };
+        setTimeout(checkRender, 300);
+      });
 
-          // Force the capture target to A4 width so it fills the PDF page correctly
-          captureTarget.style.width = `${targetWidthPx}px`;
-          captureTarget.style.maxWidth = `${targetWidthPx}px`;
-          captureTarget.style.margin = '0';
-          captureTarget.style.boxSizing = 'border-box';
+      setProgress(20);
+
+      // Force all max-width constraints to allow full-width rendering
+      const allElements = tempContainer.querySelectorAll('*');
+      allElements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        const computed = window.getComputedStyle(htmlEl);
+        const maxW = computed.maxWidth;
+        // If max-width is set and less than content width, override it
+        if (maxW && maxW !== 'none') {
+          const maxVal = parseFloat(maxW);
+          if (!isNaN(maxVal) && maxVal < contentWidthPx) {
+            htmlEl.style.maxWidth = '100%';
+          }
         }
-      }
+      });
 
-      // If no visible preview, render into a temp container
-      if (!captureTarget) {
-        setProgress(8);
-
-        tempContainer = document.createElement('div');
-        tempContainer.id = 'export-temp-container';
-        // Use exact A4 width so the rendered output matches the PDF page width perfectly
-        tempContainer.style.cssText = [
-          'position: fixed',
-          'left: 0',
-          'top: 0',
-          `width: ${targetWidthPx}px`,
-          'z-index: -9999',
-          'opacity: 1',
-          'pointer-events: none',
-          'background-color: #ffffff',
-          'overflow: visible',
-        ].join(';');
-        document.body.appendChild(tempContainer);
-
-        tempRoot = createRoot(tempContainer);
-
-        // Render the selected template
-        const isAafiatakPro = resume.template === 'aafiatakpro';
-        const TemplateComponent = TEMPLATE_MAP[resume.template];
-
-        if (isAafiatakPro) {
-          tempRoot.render(
-            React.createElement(ProfessionalCVPreview, {
-              data: resume.data,
-              primaryColor: resume.primaryColor,
-              language: resume.language,
-              disableAnimations: true,
-            })
-          );
-        } else if (TemplateComponent) {
-          tempRoot.render(
-            React.createElement(TemplateComponent, {
-              data: resume.data,
-              primaryColor: resume.primaryColor,
-              fontFamily: resume.fontFamily,
-              fontSize: resume.fontSize,
-              language: resume.language,
-            })
-          );
-        } else {
-          tempRoot.render(
-            React.createElement(ProfessionalCVPreview, {
-              data: resume.data,
-              primaryColor: resume.primaryColor,
-              language: resume.language,
-              disableAnimations: true,
-            })
-          );
-        }
-
-        // Wait for render to complete
-        setProgress(15);
-        await new Promise<void>((resolve) => {
-          let checks = 0;
-          const checkRender = () => {
-            checks++;
-            const el = tempContainer!.firstElementChild;
-            if (el && el.children.length > 0) {
-              resolve();
-            } else if (checks < 40) {
-              setTimeout(checkRender, 100);
-            } else {
-              resolve();
-            }
-          };
-          setTimeout(checkRender, 300);
-        });
-
-        setProgress(25);
-        captureTarget = tempContainer.firstElementChild as HTMLElement;
-      }
+      let captureTarget: HTMLElement = tempContainer;
 
       if (!captureTarget) {
         throw new Error(language === 'ar' ? 'فشل في عرض السيرة الذاتية' : 'Failed to render resume');
@@ -289,19 +272,6 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         throw new Error(language === 'ar' ? 'فشل في التقاط الصورة' : 'Capture produced empty result');
       }
 
-      // Restore parent transform and width
-      if (parentWithTransform) {
-        parentWithTransform.style.transform = savedTransform;
-        parentWithTransform.style.transformOrigin = savedTransformOrigin;
-      }
-      // Reset width overrides on the preview element
-      if (existingPreview) {
-        existingPreview.style.width = '';
-        existingPreview.style.maxWidth = '';
-        existingPreview.style.margin = '';
-        existingPreview.style.boxSizing = '';
-      }
-
       // ===== Step 3: Export in chosen format =====
       if (format === 'pdf') {
         const jsPDF = (await import('jspdf')).default;
@@ -314,15 +284,16 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         const pdfWidth = paperSize === 'a4' ? 210 : 215.9;
         const pdfHeight = paperSize === 'a4' ? 297 : 279.4;
 
-        // No margins - content fills the entire page
-        const contentWidth = pdfWidth;
-        const contentHeight = pdfHeight;
+        // The canvas was captured at pixelRatio=2, so CSS width = imgWidth / 2
+        // The container was: width=contentWidthPx + padding=PDF_MARGIN_PX on each side
+        // Total container CSS width = contentWidthPx + (PDF_MARGIN_PX * 2) = targetWidthPx
+        const actualCssWidth = imgWidth / 2;
 
-        // Calculate how the image maps to the PDF
-        // The canvas was captured at scale=2, so actualWidth = imgWidth / 2
-        const actualWidth = imgWidth / 2;
-        const scaleRatio = contentWidth / actualWidth;
-        const totalScaledHeight = (imgHeight / 2) * scaleRatio;
+        // Scale: how many mm per CSS pixel
+        const scaleRatio = pdfWidth / actualCssWidth;
+
+        // Content height in mm
+        const totalContentHeightMm = (imgHeight / 2) * scaleRatio;
 
         const pdf = new jsPDF({
           orientation: 'portrait',
@@ -330,32 +301,30 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           format: paperSize === 'a4' ? 'a4' : 'letter',
         });
 
-        if (totalScaledHeight <= contentHeight) {
-          // Single page - center vertically if content is shorter than page
-          const yOffset = Math.max(0, (contentHeight - totalScaledHeight) / 2);
+        if (totalContentHeightMm <= pdfHeight) {
+          // Single page - content fits on one page, center vertically
+          const yOffset = Math.max(0, (pdfHeight - totalContentHeightMm) / 2);
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
-          pdf.addImage(imgData, 'JPEG', 0, yOffset, contentWidth, totalScaledHeight);
+          pdf.addImage(imgData, 'JPEG', 0, yOffset, pdfWidth, totalContentHeightMm);
         } else {
           // Multi-page PDF with smart page breaks
           const pageCanvas = document.createElement('canvas');
           const pageCtx = pageCanvas.getContext('2d')!;
-          
-          // How many pixels of the source image correspond to one PDF page height
+
+          // How many canvas pixels correspond to one PDF page height
           const pixelsPerMm = imgWidth / pdfWidth;
-          const pageHeightPixels = contentHeight * pixelsPerMm;
+          const pageHeightPixels = pdfHeight * pixelsPerMm;
 
           let currentY = 0;
           let pageNum = 0;
 
           while (currentY < imgHeight) {
-            // Calculate ideal slice height for this page
             let sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
 
             // For all pages except the last, find a safe break point
             if (currentY + sliceHeight < imgHeight) {
               const safeY = findSafeBreakPoint(canvas, currentY + sliceHeight, 100);
               const adjustedSliceHeight = safeY - currentY;
-              // Only use the safe break if it doesn't make the page too short (min 50% of page height)
               if (adjustedSliceHeight > pageHeightPixels * 0.5) {
                 sliceHeight = adjustedSliceHeight;
               }
@@ -376,12 +345,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             pageCtx.drawImage(canvas, 0, currentY, imgWidth, sliceHeight, 0, 0, imgWidth, sliceHeight);
 
             const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-            const pageScaledHeight = (sliceHeight / 2) * scaleRatio;
+            const pageScaledHeightMm = (sliceHeight / 2) * scaleRatio;
 
             if (pageNum > 0) pdf.addPage();
 
-            // Add image filling the full page width, starting from top-left
-            pdf.addImage(pageImgData, 'JPEG', 0, 0, contentWidth, pageScaledHeight);
+            // Add image filling the full page width from x=0
+            pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidth, pageScaledHeightMm);
 
             currentY += sliceHeight;
             pageNum++;

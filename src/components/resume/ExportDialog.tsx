@@ -15,7 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { Download, FileText, Image, Loader2, FileImage, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-  AafiatakProTemplate, ClassicTemplate, ModernTemplate, ExecutiveTemplate,
+  ClassicTemplate, ModernTemplate, ExecutiveTemplate,
   CreativeTemplate, MinimalTemplate, CorporateTemplate, ATSTemplate,
   MedicalTemplate, EngineeringTemplate, AcademicTemplate, ElegantTemplate,
   PremiumDarkTemplate, LuxuryTemplate, StartupTemplate, ConsultantTemplate,
@@ -23,11 +23,12 @@ import {
   FinanceTemplate,
 } from '@/components/templates';
 import type { TemplateProps } from '@/components/templates';
+import { ProfessionalCVPreview } from './ProfessionalCVPreview';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
 
 const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
-  aafiatakpro: AafiatakProTemplate, classic: ClassicTemplate, modern: ModernTemplate,
+  classic: ClassicTemplate, modern: ModernTemplate,
   executive: ExecutiveTemplate, creative: CreativeTemplate, minimal: MinimalTemplate,
   corporate: CorporateTemplate, ats: ATSTemplate, medical: MedicalTemplate,
   engineering: EngineeringTemplate, academic: AcademicTemplate, elegant: ElegantTemplate,
@@ -220,16 +221,38 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         tempRoot = createRoot(tempContainer);
 
         // Render the selected template
-        const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
-        tempRoot.render(
-          React.createElement(TemplateComponent, {
-            data: resume.data,
-            primaryColor: resume.primaryColor,
-            fontFamily: resume.fontFamily,
-            fontSize: resume.fontSize,
-            language: resume.language,
-          })
-        );
+        const isAafiatakPro = resume.template === 'aafiatakpro';
+        const TemplateComponent = TEMPLATE_MAP[resume.template];
+
+        if (isAafiatakPro) {
+          tempRoot.render(
+            React.createElement(ProfessionalCVPreview, {
+              data: resume.data,
+              primaryColor: resume.primaryColor,
+              language: resume.language,
+              disableAnimations: true,
+            })
+          );
+        } else if (TemplateComponent) {
+          tempRoot.render(
+            React.createElement(TemplateComponent, {
+              data: resume.data,
+              primaryColor: resume.primaryColor,
+              fontFamily: resume.fontFamily,
+              fontSize: resume.fontSize,
+              language: resume.language,
+            })
+          );
+        } else {
+          tempRoot.render(
+            React.createElement(ProfessionalCVPreview, {
+              data: resume.data,
+              primaryColor: resume.primaryColor,
+              language: resume.language,
+              disableAnimations: true,
+            })
+          );
+        }
 
         // Wait for render to complete
         setProgress(15);

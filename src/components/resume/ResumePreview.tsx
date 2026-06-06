@@ -15,9 +15,10 @@ import {
   FinanceTemplate,
 } from '@/components/templates';
 import type { TemplateProps } from '@/components/templates';
+import { ProfessionalCVPreview } from './ProfessionalCVPreview';
 
 const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
-  aafiatakpro: AafiatakProTemplate, classic: ClassicTemplate, modern: ModernTemplate,
+  classic: ClassicTemplate, modern: ModernTemplate,
   executive: ExecutiveTemplate, creative: CreativeTemplate, minimal: MinimalTemplate,
   corporate: CorporateTemplate, ats: ATSTemplate, medical: MedicalTemplate,
   engineering: EngineeringTemplate, academic: AcademicTemplate, elegant: ElegantTemplate,
@@ -46,7 +47,8 @@ export function ResumePreview() {
     );
   }
 
-  const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
+  const isAafiatakPro = resume.template === 'aafiatakpro';
+  const TemplateComponent = TEMPLATE_MAP[resume.template];
 
   return (
     <div className={`flex flex-col h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
@@ -105,13 +107,27 @@ export function ResumePreview() {
               className="origin-top transition-transform duration-300"
               style={{ transform: `scale(${previewZoom})`, transformOrigin: 'top center' }}
             >
-              <TemplateComponent
-                data={resume.data}
-                primaryColor={resume.primaryColor}
-                fontFamily={resume.fontFamily}
-                fontSize={resume.fontSize}
-                language={resume.language}
-              />
+              {isAafiatakPro ? (
+                <ProfessionalCVPreview
+                  data={resume.data}
+                  primaryColor={resume.primaryColor}
+                  language={resume.language}
+                />
+              ) : TemplateComponent ? (
+                <TemplateComponent
+                  data={resume.data}
+                  primaryColor={resume.primaryColor}
+                  fontFamily={resume.fontFamily}
+                  fontSize={resume.fontSize}
+                  language={resume.language}
+                />
+              ) : (
+                <ProfessionalCVPreview
+                  data={resume.data}
+                  primaryColor={resume.primaryColor}
+                  language={resume.language}
+                />
+              )}
             </div>
           </motion.div>
         </AnimatePresence>

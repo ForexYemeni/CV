@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
   AafiatakProTemplate,
   ClassicTemplate,
@@ -76,8 +76,8 @@ interface MiniTemplatePreviewProps {
 }
 
 /**
- * Renders an actual template component at a small scale with sample data.
- * Uses CSS transform: scale() to shrink the full A4 template into a thumbnail.
+ * Renders a responsive template component at a small scale with sample data.
+ * The template renders at a fixed internal width and is scaled down via CSS transform.
  */
 export function MiniTemplatePreview({
   templateId,
@@ -90,13 +90,29 @@ export function MiniTemplatePreview({
 }: MiniTemplatePreviewProps) {
   const TemplateComponent = TEMPLATE_MAP[templateId] || AafiatakProTemplate;
   const sampleData = useMemo(() => getSampleData(language), [language]);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState(600);
 
-  // A4 dimensions in mm; we render at ~1px per mm for the thumbnail base
-  const a4Width = 210;
-  const a4Height = 297;
+  // Internal render width – templates are responsive and will adapt to this
+  const renderWidth = 400;
 
-  // Calculate scale to fit within the container
-  const scale = Math.min(width / a4Width, height / a4Height);
+  // Measure the actual rendered height of the template
+  const measureHeight = useCallback(() => {
+    if (innerRef.current) {
+      const h = innerRef.current.scrollHeight;
+      if (h > 0) setContentHeight(h);
+    }
+  }, []);
+
+  useEffect(() => {
+    measureHeight();
+    // Also measure after a short delay to account for fonts/images loading
+    const timer = setTimeout(measureHeight, 200);
+    return () => clearTimeout(timer);
+  }, [measureHeight, templateId, language, primaryColor]);
+
+  // Calculate scale to fit the thumbnail container
+  const scale = Math.min(width / renderWidth, height / contentHeight);
 
   const color = primaryColor || (
     templateId === 'aafiatakpro' ? '#0ea5e9' :
@@ -122,25 +138,27 @@ export function MiniTemplatePreview({
 
   return (
     <div
-      className={`relative overflow-hidden bg-white ${className}`}
+      className={`relative overflow-hidden bg-white dark:bg-gray-900 ${className}`}
       style={{ width, height }}
       onClick={onClick}
     >
       <div
         style={{
-          width: a4Width,
-          height: a4Height,
+          width: renderWidth,
+          minHeight: contentHeight,
           transform: `scale(${scale})`,
           transformOrigin: 'top left',
         }}
       >
-        <TemplateComponent
-          data={sampleData}
-          primaryColor={color}
-          fontFamily="inter"
-          fontSize="small"
-          language={language}
-        />
+        <div ref={innerRef} style={{ width: renderWidth }}>
+          <TemplateComponent
+            data={sampleData}
+            primaryColor={color}
+            fontFamily="inter"
+            fontSize="small"
+            language={language}
+          />
+        </div>
       </div>
     </div>
   );

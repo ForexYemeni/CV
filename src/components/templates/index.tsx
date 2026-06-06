@@ -1,28 +1,10 @@
 import React from 'react';
 import {
-  Mail,
-  Phone,
-  MapPin,
-  Globe,
-  Linkedin,
-  Github,
-  ExternalLink,
-  Briefcase,
-  GraduationCap,
-  Wrench,
-  Award,
-  Globe2,
-  FolderKanban,
-  Link as LinkIcon,
-  FileText,
-  Star,
-  Clock,
-  CheckCircle2,
-  Building2,
-  Calendar,
-  Shield,
-  BookOpen,
-  Trophy,
+  Mail, Phone, MapPin, Globe, Linkedin, Github, ExternalLink,
+  Briefcase, GraduationCap, Wrench, Award, Globe2, FolderKanban,
+  Link as LinkIcon, FileText, Star, Clock, CheckCircle2, Building2,
+  Calendar, Shield, BookOpen, Trophy, Zap, User, Sparkles, Heart,
+  TrendingUp, Code, PieChart, Target, Cpu, BarChart3,
 } from 'lucide-react';
 import type { ResumeData, SkillLevel, LanguageLevel, DegreeType } from '@/lib/types';
 import { SKILL_LEVEL_LABELS, LANGUAGE_LEVEL_LABELS, DEGREE_LABELS } from '@/lib/types';
@@ -96,7 +78,6 @@ function sectionLabel(type: string, lang: 'ar' | 'en'): string {
   return labels[type]?.[lang] || type;
 }
 
-/** Return visible sections sorted by order, excluding personalInfo which is rendered by the header */
 function getVisibleSections(sections: ResumeData['sections']): string[] {
   return sections
     .filter((s) => s.visible && s.type !== 'personalInfo')
@@ -104,132 +85,95 @@ function getVisibleSections(sections: ResumeData['sections']): string[] {
     .map((s) => s.type);
 }
 
-const A4: React.CSSProperties = {
-  width: '210mm',
-  minHeight: '297mm',
-  backgroundColor: '#ffffff',
-  color: '#1a1a1a',
-  lineHeight: 1.5,
-  boxSizing: 'border-box' as const,
-};
-
 const isRtl = (lang: 'ar' | 'en') => lang === 'ar';
 const dir = (lang: 'ar' | 'en') => isRtl(lang) ? 'rtl' as const : 'ltr' as const;
 
+function computeYears(experience: { startDate: string; endDate: string; current: boolean }[]): number {
+  if (!experience.length) return 0;
+  let totalMonths = 0;
+  for (const exp of experience) {
+    const start = new Date(exp.startDate);
+    const end = exp.current ? new Date() : new Date(exp.endDate || Date.now());
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) continue;
+    totalMonths += (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  }
+  return Math.round(totalMonths / 12);
+}
+
 /* -------------------------------------------------------------------------- */
-/*  Contact Info helper – renders a row of contact items                      */
+/*  Shared Reusable Components                                                */
 /* -------------------------------------------------------------------------- */
 
-function ContactItems({ info, color, lang, size, iconSize = 10 }: {
-  info: ResumeData['personalInfo'];
-  color: string;
-  lang: 'ar' | 'en';
-  size: number;
-  iconSize?: number;
-}) {
+function SectionCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm ${className}`}>{children}</div>;
+}
+
+function SectionHeader({ icon, title, className = '' }: { icon: React.ReactNode; title: string; className?: string }) {
+  return (
+    <div className={`flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-0 ${className}`}>
+      <div className="flex items-center justify-center w-6 h-6 rounded-lg shrink-0">{icon}</div>
+      <h3 className="text-sm sm:text-base font-semibold">{title}</h3>
+    </div>
+  );
+}
+
+/* Contact items rendered as flex-wrap row */
+function ContactRow({ info, color, lang, size }: { info: ResumeData['personalInfo']; color: string; lang: 'ar' | 'en'; size: number }) {
   const items: React.ReactNode[] = [];
-  const s: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: size, color: '#555' };
-
-  if (info.email) items.push(<span key="email" style={s}><Mail size={iconSize} style={{ color }} />{info.email}</span>);
-  if (info.phone) items.push(<span key="phone" style={s}><Phone size={iconSize} style={{ color }} />{info.phone}</span>);
-  if (info.city || info.country) items.push(<span key="loc" style={s}><MapPin size={iconSize} style={{ color }} />{[info.city, info.country].filter(Boolean).join(', ')}</span>);
-  if (info.website) items.push(<span key="web" style={s}><Globe size={iconSize} style={{ color }} />{info.website}</span>);
-  if (info.linkedin) items.push(<span key="li" style={s}><Linkedin size={iconSize} style={{ color }} />{info.linkedin}</span>);
-  if (info.github) items.push(<span key="gh" style={s}><Github size={iconSize} style={{ color }} />{info.github}</span>);
+  const cls = 'inline-flex items-center gap-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400';
+  if (info.email) items.push(<span key="email" className={cls}><Mail size={12} style={{ color }} />{info.email}</span>);
+  if (info.phone) items.push(<span key="phone" className={cls}><Phone size={12} style={{ color }} />{info.phone}</span>);
+  if (info.city || info.country) items.push(<span key="loc" className={cls}><MapPin size={12} style={{ color }} />{[info.city, info.country].filter(Boolean).join(', ')}</span>);
+  if (info.website) items.push(<span key="web" className={cls}><Globe size={12} style={{ color }} />{info.website}</span>);
+  if (info.linkedin) items.push(<span key="li" className={cls}><Linkedin size={12} style={{ color }} />{info.linkedin}</span>);
+  if (info.github) items.push(<span key="gh" className={cls}><Github size={12} style={{ color }} />{info.github}</span>);
   if (info.otherLinks?.length > 0) {
     info.otherLinks.forEach((l, i) => {
-      if (l.url) items.push(<span key={`ol${i}`} style={s}><LinkIcon size={iconSize} style={{ color }} />{l.label || l.url}</span>);
+      if (l.url) items.push(<span key={`ol${i}`} className={cls}><LinkIcon size={12} style={{ color }} />{l.label || l.url}</span>);
     });
   }
-
-  return <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: isRtl(lang) ? '4px 14px' : '4px 14px' }}>{items}</div>;
+  return <div className="flex flex-wrap gap-x-3 gap-y-1">{items}</div>;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Section renderer helpers                                                  */
-/* -------------------------------------------------------------------------- */
-
-function ExperienceSection({ data, color, lang, size }: { data: ResumeData; color: string; lang: 'ar' | 'en'; size: number }) {
-  if (!data.experience.length) return null;
+/* Avatar component */
+function Avatar({ photo, name, color, size = 'md' }: { photo: string; name: string; color: string; size?: 'sm' | 'md' | 'lg' }) {
+  const sz = size === 'lg' ? 'w-20 h-20 sm:w-24 sm:h-24' : size === 'sm' ? 'w-12 h-12 sm:w-14 sm:h-14' : 'w-16 h-16 sm:w-20 sm:h-20';
+  const initials = name ? name.split(' ').map(n => n[0]).join('').slice(0, 2) : '?';
   return (
-    <div>
-      {data.experience.map((exp) => (
-        <div key={exp.id} style={{ marginBottom: size * 0.7 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: size + 1 }}>{exp.jobTitle}</div>
-              <div style={{ fontSize: size, color: '#555' }}>{exp.company}</div>
-            </div>
-            <div style={{ fontSize: size - 1, color: '#999', whiteSpace: 'nowrap' as const }}>
-              {formatDateRange(exp.startDate, exp.endDate, exp.current, lang)}
-            </div>
-          </div>
-          {exp.description && (
-            <div style={{ fontSize: size - 1, color: '#666', marginTop: 2, whiteSpace: 'pre-line' as const }}>{exp.description}</div>
-          )}
-        </div>
-      ))}
+    <div className={`${sz} rounded-full overflow-hidden flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800 border-2`} style={{ borderColor: color + '40' }}>
+      {photo ? <img src={photo} alt={name} className="w-full h-full object-cover" /> : <span className="text-sm sm:text-base font-bold" style={{ color }}>{initials}</span>}
     </div>
   );
 }
 
-function EducationSection({ data, color, lang, size }: { data: ResumeData; color: string; lang: 'ar' | 'en'; size: number }) {
-  if (!data.education.length) return null;
-  return (
-    <div>
-      {data.education.map((edu) => (
-        <div key={edu.id} style={{ marginBottom: size * 0.7 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: size + 1 }}>{edu.major}</div>
-              <div style={{ fontSize: size, color: '#555' }}>{edu.institution}{edu.degree ? ` — ${DEGREE_LABELS[lang][edu.degree as DegreeType] || edu.degree}` : ''}</div>
-            </div>
-            <div style={{ fontSize: size - 1, color: '#999', whiteSpace: 'nowrap' as const }}>
-              {edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}
-            </div>
-          </div>
-          {edu.description && (
-            <div style={{ fontSize: size - 1, color: '#666', marginTop: 2 }}>{edu.description}</div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SkillsBadges({ data, color, lang, size }: { data: ResumeData; color: string; lang: 'ar' | 'en'; size: number }) {
+/* Skill badges */
+function SkillBadges({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
   if (!data.skills.length) return null;
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
+    <div className="flex flex-wrap gap-1.5 sm:gap-2">
       {data.skills.map((sk) => (
-        <span key={sk.id} style={{
-          display: 'inline-block',
-          padding: '2px 8px',
-          borderRadius: 4,
-          fontSize: size - 1,
-          fontWeight: 500,
-          backgroundColor: color + '18',
-          color: color,
-        }}>
-          {sk.name}<span style={{ opacity: 0.6, marginInlineStart: 3 }}>· {SKILL_LEVEL_LABELS[lang][sk.level]}</span>
+        <span key={sk.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs sm:text-sm font-medium" style={{ backgroundColor: color + '15', color }}>
+          {sk.name}
+          <span className="opacity-60 ms-1">· {SKILL_LEVEL_LABELS[lang][sk.level]}</span>
         </span>
       ))}
     </div>
   );
 }
 
-function SkillsBars({ data, color, lang, size }: { data: ResumeData; color: string; lang: 'ar' | 'en'; size: number }) {
+/* Skill bars */
+function SkillBars({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
   if (!data.skills.length) return null;
   return (
-    <div>
+    <div className="space-y-2 sm:space-y-2.5">
       {data.skills.map((sk) => (
-        <div key={sk.id} style={{ marginBottom: 6 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: size - 1, marginBottom: 2 }}>
-            <span style={{ fontWeight: 500 }}>{sk.name}</span>
-            <span style={{ color: '#888' }}>{SKILL_LEVEL_LABELS[lang][sk.level]}</span>
+        <div key={sk.id}>
+          <div className="flex justify-between text-xs sm:text-sm mb-1">
+            <span className="font-medium">{sk.name}</span>
+            <span className="text-gray-400 text-[10px] sm:text-xs">{SKILL_LEVEL_LABELS[lang][sk.level]}</span>
           </div>
-          <div style={{ height: 5, borderRadius: 3, backgroundColor: '#e5e7eb', overflow: 'hidden' }}>
-            <div style={{ height: '100%', borderRadius: 3, width: getSkillWidth(sk.level), backgroundColor: color, transition: 'width 0.3s' }} />
+          <div className="h-1.5 sm:h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: getSkillWidth(sk.level), backgroundColor: color }} />
           </div>
         </div>
       ))}
@@ -237,53 +181,22 @@ function SkillsBars({ data, color, lang, size }: { data: ResumeData; color: stri
   );
 }
 
-function CertificationsSection({ data, color, lang, size }: { data: ResumeData; color: string; lang: 'ar' | 'en'; size: number }) {
-  if (!data.certifications.length) return null;
-  return (
-    <div>
-      {data.certifications.map((c) => (
-        <div key={c.id} style={{ marginBottom: size * 0.5 }}>
-          <span style={{ fontWeight: 600, fontSize: size }}>{c.name}</span>
-          <span style={{ fontSize: size - 1, color: '#888', marginInlineStart: 6 }}>{c.issuer}{c.date ? ` · ${c.date}` : ''}</span>
-          {c.description && <div style={{ fontSize: size - 1, color: '#666', marginTop: 1 }}>{c.description}</div>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function LanguagesSection({ data, color, lang, size }: { data: ResumeData; color: string; lang: 'ar' | 'en'; size: number }) {
+/* Language dots */
+function LanguageDots({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
   if (!data.languages.length) return null;
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px 16px' }}>
-      {data.languages.map((l) => (
-        <div key={l.id} style={{ fontSize: size }}>
-          <span style={{ fontWeight: 500 }}>{l.name}</span>
-          <span style={{ fontSize: size - 1, color: '#888', marginInlineStart: 4 }}>({LANGUAGE_LEVEL_LABELS[lang][l.level]})</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function LanguagesDots({ data, color, lang, size }: { data: ResumeData; color: string; lang: 'ar' | 'en'; size: number }) {
-  if (!data.languages.length) return null;
-  return (
-    <div>
+    <div className="space-y-2">
       {data.languages.map((l) => {
         const filled = getLanguageDots(l.level);
         return (
-          <div key={l.id} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: size - 1, fontWeight: 500, minWidth: 80 }}>{l.name}</span>
-            <div style={{ display: 'flex', gap: 3 }}>
+          <div key={l.id} className="flex items-center gap-2 sm:gap-3">
+            <span className="text-xs sm:text-sm font-medium min-w-[60px]">{l.name}</span>
+            <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((d) => (
-                <div key={d} style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  backgroundColor: d <= filled ? color : '#e5e7eb',
-                }} />
+                <div key={d} className="w-2 h-2 rounded-full" style={{ backgroundColor: d <= filled ? color : '#e5e7eb' }} />
               ))}
             </div>
-            <span style={{ fontSize: size - 2, color: '#999' }}>{LANGUAGE_LEVEL_LABELS[lang][l.level]}</span>
+            <span className="text-[10px] sm:text-xs text-gray-400">{LANGUAGE_LEVEL_LABELS[lang][l.level]}</span>
           </div>
         );
       })}
@@ -291,21 +204,109 @@ function LanguagesDots({ data, color, lang, size }: { data: ResumeData; color: s
   );
 }
 
-function ProjectsSection({ data, color, lang, size }: { data: ResumeData; color: string; lang: 'ar' | 'en'; size: number }) {
+/* Language list */
+function LanguageList({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
+  if (!data.languages.length) return null;
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1">
+      {data.languages.map((l) => (
+        <div key={l.id} className="text-xs sm:text-sm">
+          <span className="font-medium">{l.name}</span>
+          <span className="text-gray-400 ms-1">({LANGUAGE_LEVEL_LABELS[lang][l.level]})</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* Experience items */
+function ExperienceItems({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
+  if (!data.experience.length) return null;
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      {data.experience.map((exp) => (
+        <div key={exp.id}>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-2">
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold">{exp.jobTitle}</h4>
+              <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
+                <Building2 size={12} style={{ color: color + '80' }} />
+                <span>{exp.company}</span>
+              </div>
+            </div>
+            <span className="text-[10px] sm:text-xs text-gray-400 shrink-0 flex items-center gap-1">
+              <Calendar size={10} />{formatDateRange(exp.startDate, exp.endDate, exp.current, lang)}
+            </span>
+          </div>
+          {exp.description && (
+            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1.5 whitespace-pre-line leading-relaxed bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">
+              {exp.description}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* Education items */
+function EducationItems({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
+  if (!data.education.length) return null;
+  return (
+    <div className="space-y-2.5 sm:space-y-3">
+      {data.education.map((edu) => (
+        <div key={edu.id} className="pb-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold">{edu.major}</h4>
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">{edu.institution}</p>
+              {edu.degree && (
+                <span className="inline-block text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-medium mt-1" style={{ backgroundColor: color + '10', color }}>
+                  {DEGREE_LABELS[lang][edu.degree as DegreeType] || edu.degree}
+                </span>
+              )}
+            </div>
+            <span className="text-[9px] sm:text-[10px] text-gray-400 shrink-0">{edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}</span>
+          </div>
+          {edu.description && <p className="text-[11px] sm:text-xs text-gray-500 mt-1">{edu.description}</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* Certification items */
+function CertItems({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
+  if (!data.certifications.length) return null;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {data.certifications.map((c) => (
+        <div key={c.id} className="rounded-lg sm:rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-2.5 sm:p-3">
+          <h4 className="text-xs sm:text-sm font-semibold leading-tight">{c.name}</h4>
+          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{c.issuer}{c.date ? ` · ${c.date}` : ''}</p>
+          {c.description && <p className="text-[10px] sm:text-xs text-gray-400 mt-1">{c.description}</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* Project items */
+function ProjectItems({ data, color }: { data: ResumeData; color: string }) {
   if (!data.projects.length) return null;
   return (
-    <div>
+    <div className="space-y-2 sm:space-y-3">
       {data.projects.map((p) => (
-        <div key={p.id} style={{ marginBottom: size * 0.7 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontWeight: 700, fontSize: size + 1 }}>{p.name}</span>
-            {p.url && <ExternalLink size={10} style={{ color: '#aaa' }} />}
+        <div key={p.id} className="rounded-lg sm:rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-2.5 sm:p-3">
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="text-xs sm:text-sm font-semibold">{p.name}</h4>
+            {p.url && <ExternalLink size={12} className="text-gray-400 shrink-0" />}
           </div>
-          {p.description && <div style={{ fontSize: size - 1, color: '#666', marginTop: 1 }}>{p.description}</div>}
+          {p.description && <p className="text-[11px] sm:text-xs text-gray-500 mt-1 leading-relaxed">{p.description}</p>}
           {p.technologies.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginTop: 3 }}>
+            <div className="flex flex-wrap gap-1 mt-1.5">
               {p.technologies.map((t) => (
-                <span key={t} style={{ fontSize: size - 2, padding: '1px 6px', borderRadius: 3, backgroundColor: '#f3f4f6', color: '#555' }}>{t}</span>
+                <span key={t} className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: color + '10', color: color + 'cc' }}>{t}</span>
               ))}
             </div>
           )}
@@ -315,106 +316,56 @@ function ProjectsSection({ data, color, lang, size }: { data: ResumeData; color:
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Section heading styles for different templates                            */
-/* -------------------------------------------------------------------------- */
-
-function HeadingUnderline({ title, color, size }: { title: string; color: string; size: number }) {
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ fontWeight: 700, fontSize: size + 3, textTransform: 'uppercase' as const, letterSpacing: 1, color, paddingBottom: 4, borderBottom: `2px solid ${color}` }}>{title}</div>
-    </div>
-  );
-}
-
-function HeadingLine({ title, color, size }: { title: string; color: string; size: number }) {
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ fontWeight: 700, fontSize: size + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color, paddingBottom: 4, borderBottom: `1px solid ${color}40` }}>{title}</div>
-    </div>
-  );
-}
-
-function HeadingMinimal({ title, color, size }: { title: string; color: string; size: number }) {
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ fontWeight: 600, fontSize: size + 2, textTransform: 'uppercase' as const, letterSpacing: 2, color, paddingBottom: 4 }}>{title}</div>
-    </div>
-  );
-}
-
-function HeadingBox({ title, color, size }: { title: string; color: string; size: number }) {
-  return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ fontWeight: 700, fontSize: size + 2, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: '#fff', backgroundColor: color, padding: '4px 12px', borderRadius: 3, display: 'inline-block' }}>{title}</div>
-    </div>
-  );
-}
-
-function HeadingAccent({ title, color, size }: { title: string; color: string; size: number }) {
-  return (
-    <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: color }} />
-      <div style={{ fontWeight: 700, fontSize: size + 2, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: '#1a1a1a' }}>{title}</div>
-    </div>
-  );
+/* Generic section renderer */
+function renderSection(type: string, data: ResumeData, color: string, lang: 'ar' | 'en') {
+  switch (type) {
+    case 'experience': return <ExperienceItems data={data} color={color} lang={lang} />;
+    case 'education': return <EducationItems data={data} color={color} lang={lang} />;
+    case 'skills': return <SkillBadges data={data} color={color} lang={lang} />;
+    case 'certifications': return <CertItems data={data} color={color} lang={lang} />;
+    case 'languages': return <LanguageList data={data} color={color} lang={lang} />;
+    case 'projects': return <ProjectItems data={data} color={color} />;
+    default: return null;
+  }
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   1. CLASSIC TEMPLATE                                                        */
-/*                                                                              */
+/*   1. CLASSIC TEMPLATE - "الكلاسيكي"                                         */
 /* ============================================================================ */
 
 export function ClassicTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'skills': return <SkillsBadges data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Header */}
-      <div style={{ padding: '28px 32px 20px', borderBottom: `3px solid ${primaryColor}`, display: 'flex', gap: 20, alignItems: 'center' }}>
-        {p.photo && (
-          <div style={{ flexShrink: 0 }}>
-            <img src={p.photo} alt="" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${primaryColor}` }} />
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Header with photo and info */}
+      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b-2" style={{ borderColor: primaryColor }}>
+        <div className="flex items-center gap-3 sm:gap-4">
+          {p.photo && <Avatar photo={p.photo} name={p.fullName} color={primaryColor} size="md" />}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white truncate">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <div className="text-xs sm:text-sm font-medium mt-0.5 inline-block border-b pb-0.5" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
+            <div className="mt-2"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
           </div>
-        )}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: sz + 14, fontWeight: 800, color: '#1a1a1a', marginBottom: 2, letterSpacing: 0.5 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-          <div style={{ fontSize: sz + 4, fontWeight: 500, color: primaryColor, marginBottom: 8, borderBottom: `1px solid ${primaryColor}40`, paddingBottom: 6, display: 'inline-block' }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-          <ContactItems info={p} color={primaryColor} lang={language} size={sz - 1} />
         </div>
       </div>
 
       {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '16px 32px 8px' }}>
-          <HeadingUnderline title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor} size={sz} />
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-4 sm:px-6 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b-2" style={{ color: primaryColor, borderColor: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
       {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <HeadingUnderline title={sectionLabel(type, language)} color={primaryColor} size={sz} />
-            {renderSection(type)}
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b-2" style={{ color: primaryColor, borderColor: primaryColor }}>{sectionLabel(type, language)}</h2>
+            {renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -423,145 +374,103 @@ export function ClassicTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   2. MODERN TEMPLATE – Dark sidebar + main content                          */
-/*                                                                              */
+/*   2. MODERN TEMPLATE - "العصري"                                             */
 /* ============================================================================ */
 
 export function ModernTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const isR = isRtl(language);
-
-  const sidebarBg = primaryColor;
-  const mainSections = ['experience', 'education', 'projects'];
   const sideSections = ['skills', 'certifications', 'languages'];
-
+  const mainSections = ['experience', 'education', 'projects'];
   const sidebarItems = sideSections.filter((s) => sections.includes(s));
   const mainItems = mainSections.filter((s) => sections.includes(s));
 
-  const renderSideSection = (type: string) => {
-    switch (type) {
-      case 'skills': return (
-        <div>
-          {data.skills.map((sk) => (
-            <div key={sk.id} style={{ marginBottom: 7 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: sz - 1, marginBottom: 3 }}>
-                <span>{sk.name}</span>
-                <span style={{ opacity: 0.7 }}>{SKILL_LEVEL_LABELS[language][sk.level]}</span>
-              </div>
-              <div style={{ height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 2, width: getSkillWidth(sk.level), backgroundColor: 'rgba(255,255,255,0.85)' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'certifications': return (
-        <div>
-          {data.certifications.map((c) => (
-            <div key={c.id} style={{ marginBottom: 6, fontSize: sz - 1 }}>
-              <div style={{ fontWeight: 600 }}>{c.name}</div>
-              <div style={{ opacity: 0.7 }}>{c.issuer}{c.date ? ` · ${c.date}` : ''}</div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'languages': return (
-        <div>
-          {data.languages.map((l) => {
-            const filled = getLanguageDots(l.level);
-            return (
-              <div key={l.id} style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: sz - 1, minWidth: 70 }}>{l.name}</span>
-                <div style={{ display: 'flex', gap: 3 }}>
-                  {[1, 2, 3, 4, 5].map((dot) => (
-                    <div key={dot} style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: dot <= filled ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)' }} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-      default: return null;
-    }
-  };
-
-  const renderMainSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, display: 'flex' }}>
-      {/* Sidebar */}
-      <div style={{
-        width: '35%',
-        backgroundColor: sidebarBg,
-        color: '#ffffff',
-        padding: '28px 20px',
-        boxSizing: 'border-box' as const,
-      }}>
-        {/* Photo */}
-        {p.photo && (
-          <div style={{ textAlign: 'center' as const, marginBottom: 16 }}>
-            <img src={p.photo} alt="" style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.5)', margin: '0 auto', display: 'block' }} />
-          </div>
-        )}
-
-        {/* Name & Title */}
-        <div style={{ textAlign: 'center' as const, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
-          <div style={{ fontSize: sz + 8, fontWeight: 800, marginBottom: 4 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-          <div style={{ fontSize: sz + 1, opacity: 0.85, fontWeight: 400 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
+    <div className="w-full max-w-lg mx-auto flex flex-col md:flex-row" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Sidebar - becomes top banner on mobile */}
+      <div className="w-full md:w-[35%] text-white p-4 sm:p-5" style={{ backgroundColor: primaryColor }}>
+        <div className="flex flex-col items-center text-center">
+          {p.photo && (
+            <div className="mb-3">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white/40">
+                <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
+          <h1 className="text-base sm:text-lg font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+          <p className="text-xs sm:text-sm opacity-85 mt-0.5">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
         </div>
 
         {/* Contact */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: sz + 1, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10, paddingBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
-            {language === 'ar' ? 'معلومات التواصل' : 'Contact'}
+        <div className="mt-4 pt-3 border-t border-white/20">
+          <h3 className="text-xs font-bold uppercase tracking-wider mb-2">{language === 'ar' ? 'معلومات التواصل' : 'Contact'}</h3>
+          <div className="space-y-1.5 text-[10px] sm:text-xs">
+            {p.email && <div className="flex items-center gap-1.5"><Mail size={11} /><span className="break-all">{p.email}</span></div>}
+            {p.phone && <div className="flex items-center gap-1.5"><Phone size={11} />{p.phone}</div>}
+            {(p.city || p.country) && <div className="flex items-center gap-1.5"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</div>}
+            {p.website && <div className="flex items-center gap-1.5"><Globe size={11} /><span className="break-all">{p.website}</span></div>}
+            {p.linkedin && <div className="flex items-center gap-1.5"><Linkedin size={11} /><span className="break-all">{p.linkedin}</span></div>}
+            {p.github && <div className="flex items-center gap-1.5"><Github size={11} /><span className="break-all">{p.github}</span></div>}
           </div>
-          {p.email && <div style={{ fontSize: sz - 1, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, wordBreak: 'break-all' as const }}><Mail size={11} /> {p.email}</div>}
-          {p.phone && <div style={{ fontSize: sz - 1, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={11} /> {p.phone}</div>}
-          {(p.city || p.country) && <div style={{ fontSize: sz - 1, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={11} /> {[p.city, p.country].filter(Boolean).join(', ')}</div>}
-          {p.website && <div style={{ fontSize: sz - 1, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, wordBreak: 'break-all' as const }}><Globe size={11} /> {p.website}</div>}
-          {p.linkedin && <div style={{ fontSize: sz - 1, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, wordBreak: 'break-all' as const }}><Linkedin size={11} /> {p.linkedin}</div>}
-          {p.github && <div style={{ fontSize: sz - 1, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, wordBreak: 'break-all' as const }}><Github size={11} /> {p.github}</div>}
         </div>
 
         {/* Sidebar sections */}
         {sidebarItems.map((type) => (
-          <div key={type} style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: sz + 1, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
-              {sectionLabel(type, language)}
-            </div>
-            {renderSideSection(type)}
+          <div key={type} className="mt-4 pt-3 border-t border-white/20">
+            <h3 className="text-xs font-bold uppercase tracking-wider mb-2">{sectionLabel(type, language)}</h3>
+            {type === 'skills' && (
+              <div className="space-y-2">
+                {data.skills.map((sk) => (
+                  <div key={sk.id}>
+                    <div className="flex justify-between text-[10px] sm:text-xs mb-1"><span>{sk.name}</span><span className="opacity-70">{SKILL_LEVEL_LABELS[language][sk.level]}</span></div>
+                    <div className="h-1.5 rounded-full bg-white/20 overflow-hidden"><div className="h-full rounded-full bg-white/85" style={{ width: getSkillWidth(sk.level) }} /></div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {type === 'certifications' && (
+              <div className="space-y-1.5">
+                {data.certifications.map((c) => (
+                  <div key={c.id} className="text-[10px] sm:text-xs"><div className="font-semibold">{c.name}</div><div className="opacity-70">{c.issuer}{c.date ? ` · ${c.date}` : ''}</div></div>
+                ))}
+              </div>
+            )}
+            {type === 'languages' && (
+              <div className="space-y-1.5">
+                {data.languages.map((l) => {
+                  const filled = getLanguageDots(l.level);
+                  return (
+                    <div key={l.id} className="flex items-center gap-2">
+                      <span className="text-[10px] sm:text-xs min-w-[50px]">{l.name}</span>
+                      <div className="flex gap-1">{[1,2,3,4,5].map(d => <div key={d} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: d <= filled ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)' }} />)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       {/* Main content */}
-      <div style={{ width: '65%', padding: '28px 24px' }}>
-        {/* Summary */}
+      <div className="flex-1 p-4 sm:p-5 space-y-4">
         {p.summary && (
-          <div style={{ marginBottom: 18 }}>
-            <HeadingAccent title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor} size={sz} />
-            <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+          <div>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-2">
+              <span className="w-1 h-4 rounded" style={{ backgroundColor: primaryColor }} />
+              {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
           </div>
         )}
-
-        {/* Main sections */}
         {mainItems.map((type) => (
-          <div key={type} style={{ marginBottom: 18 }}>
-            <HeadingAccent title={sectionLabel(type, language)} color={primaryColor} size={sz} />
-            {renderMainSection(type)}
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-2">
+              <span className="w-1 h-4 rounded" style={{ backgroundColor: primaryColor }} />
+              {sectionLabel(type, language)}
+            </h2>
+            {renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -570,69 +479,52 @@ export function ModernTemplate({ data, primaryColor, fontFamily, fontSize, langu
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   3. EXECUTIVE TEMPLATE – Bold top banner                                   */
-/*                                                                              */
+/*   3. EXECUTIVE TEMPLATE - "التنفيذي"                                        */
 /* ============================================================================ */
 
 export function ExecutiveTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'skills': return <SkillsBadges data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Top banner */}
-      <div style={{ backgroundColor: primaryColor, color: '#ffffff', padding: '32px 36px 24px', position: 'relative' as const }}>
-        <div style={{ fontSize: sz + 18, fontWeight: 800, letterSpacing: 0.5, marginBottom: 4 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-        <div style={{ fontSize: sz + 4, fontWeight: 300, opacity: 0.9, marginBottom: 14, letterSpacing: 1 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px 16px', fontSize: sz - 1, opacity: 0.85 }}>
-          {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} /> {p.email}</span>}
-          {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} /> {p.phone}</span>}
-          {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-          {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} /> {p.website}</span>}
-          {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} /> {p.linkedin}</span>}
-          {p.github && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Github size={10} /> {p.github}</span>}
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Bold color banner */}
+      <div className="px-5 sm:px-6 py-5 sm:py-6 text-white relative" style={{ backgroundColor: primaryColor }}>
+        <h1 className="text-xl sm:text-2xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        <p className="text-sm sm:text-base font-light opacity-90 mt-1 tracking-wide">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs sm:text-sm opacity-85">
+          {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
+          {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
+          {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+          {p.website && <span className="flex items-center gap-1"><Globe size={11} />{p.website}</span>}
         </div>
-        {/* Thin gold accent line at bottom */}
-        <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 3, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+        <div className="absolute bottom-0 inset-x-0 h-1 bg-white/30" />
       </div>
 
       {/* Photo floating */}
       {p.photo && (
-        <div style={{ position: 'relative' as const, marginTop: -30, marginInlineEnd: 36, float: isRtl(language) ? 'left' : 'right' }}>
-          <img src={p.photo} alt="" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${primaryColor}`, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} />
+        <div className="px-5 sm:px-6 -mt-8 flex justify-end">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-3 border-white shadow-lg" style={{ borderColor: primaryColor }}>
+            <img src={p.photo} alt="" className="w-full h-full object-cover" />
+          </div>
         </div>
       )}
 
       {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '20px 36px 8px', clear: 'both' as const }}>
-          <HeadingLine title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor} size={sz} />
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
       {/* Sections */}
-      <div style={{ padding: '8px 36px 32px' }}>
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 16 }}>
-            <HeadingLine title={sectionLabel(type, language)} color={primaryColor} size={sz} />
-            {renderSection(type)}
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{sectionLabel(type, language)}</h2>
+            {renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -641,91 +533,63 @@ export function ExecutiveTemplate({ data, primaryColor, fontFamily, fontSize, la
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   4. CREATIVE TEMPLATE – Geometric accent, skill bars                       */
-/*                                                                              */
+/*   4. CREATIVE TEMPLATE - "الإبداعي"                                         */
 /* ============================================================================ */
 
 export function CreativeTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'skills': return <SkillsBars data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, position: 'relative' as const, overflow: 'hidden' as const }}>
+    <div className="w-full max-w-lg mx-auto relative overflow-hidden" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
       {/* Geometric corner accent */}
-      <div style={{
-        position: 'absolute' as const,
-        top: 0,
-        [isRtl(language) ? 'left' : 'right']: 0,
-        width: 120,
-        height: 120,
-        backgroundColor: primaryColor,
-        clipPath: 'polygon(100% 0, 0 0, 100% 100%)',
-        [isRtl(language) ? 'clipPath' : 'clipPath']: isRtl(language) ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)',
-        opacity: 0.15,
-      }} />
-      <div style={{
-        position: 'absolute' as const,
-        top: 0,
-        [isRtl(language) ? 'left' : 'right']: 0,
-        width: 80,
-        height: 80,
-        backgroundColor: primaryColor,
-        clipPath: isRtl(language) ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)',
-      }} />
+      <div className="absolute top-0 w-24 h-24 sm:w-32 sm:h-32 opacity-15" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: 0, clipPath: isR ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)' }} />
+      <div className="absolute top-0 w-16 h-16 sm:w-20 sm:h-20" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: 0, clipPath: isR ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)' }} />
 
       {/* Header */}
-      <div style={{ padding: '28px 32px 16px', display: 'flex', gap: 20, alignItems: 'center' }}>
-        {p.photo && (
-          <div style={{ flexShrink: 0 }}>
-            <img src={p.photo} alt="" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${primaryColor}`, boxShadow: `0 0 0 4px ${primaryColor}20` }} />
+      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 relative">
+        <div className="flex items-center gap-3 sm:gap-4">
+          {p.photo && (
+            <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}60)` }}>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white dark:border-gray-900">
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="mt-2"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
           </div>
-        )}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: sz + 14, fontWeight: 800, color: '#1a1a1a', marginBottom: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-          <div style={{ fontSize: sz + 3, fontWeight: 500, color: primaryColor, marginBottom: 8 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-          <ContactItems info={p} color={primaryColor} lang={language} size={sz - 1} />
         </div>
       </div>
 
-      {/* Colored divider with creative pattern */}
-      <div style={{ margin: '0 32px', height: 3, borderRadius: 2, background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60, ${primaryColor}20)` }} />
+      {/* Gradient divider */}
+      <div className="mx-4 sm:mx-6 h-1 rounded-full" style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60, ${primaryColor}10)` }} />
 
       {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '16px 32px 8px' }}>
-          <div style={{ fontSize: sz + 3, fontWeight: 700, color: primaryColor, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ display: 'inline-block', width: 20, height: 3, borderRadius: 2, backgroundColor: primaryColor }} />
+        <div className="px-4 sm:px-6 pt-4">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>
+            <span className="w-5 h-1 rounded" style={{ backgroundColor: primaryColor }} />
             {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-          </div>
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
       {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <div style={{ fontSize: sz + 3, fontWeight: 700, color: primaryColor, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ display: 'inline-block', width: 20, height: 3, borderRadius: 2, backgroundColor: primaryColor }} />
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>
+              <span className="w-5 h-1 rounded" style={{ backgroundColor: primaryColor }} />
               {sectionLabel(type, language)}
-            </div>
-            {renderSection(type)}
+            </h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -734,60 +598,39 @@ export function CreativeTemplate({ data, primaryColor, fontFamily, fontSize, lan
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   5. MINIMAL TEMPLATE – Ultra-clean, font-focused                           */
-/*                                                                              */
+/*   5. MINIMAL TEMPLATE - "البسيط"                                            */
 /* ============================================================================ */
 
 export function MinimalTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'skills': return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 8px' }}>
-          {data.skills.map((sk) => (
-            <span key={sk.id} style={{ fontSize: sz, color: '#444' }}>{sk.name}<span style={{ color: '#aaa', marginInlineStart: 2 }}>·</span></span>
-          ))}
-        </div>
-      );
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Header – super clean */}
-      <div style={{ padding: '40px 40px 20px' }}>
-        <div style={{ fontSize: sz + 16, fontWeight: 300, color: '#1a1a1a', marginBottom: 4, letterSpacing: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-        <div style={{ fontSize: sz + 2, fontWeight: 400, color: primaryColor, marginBottom: 12, letterSpacing: 1 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-        <div style={{ height: 1, backgroundColor: '#e0e0e0', marginBottom: 10 }} />
-        <ContactItems info={p} color={primaryColor} lang={language} size={sz - 1} iconSize={9} />
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      <div className="px-6 sm:px-8 pt-8 sm:pt-10 pb-4">
+        <h1 className="text-xl sm:text-2xl font-light tracking-widest text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        <p className="text-xs sm:text-sm font-normal mt-1 tracking-wider" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        <div className="h-px bg-gray-200 dark:bg-gray-700 mt-3 mb-2" />
+        <ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} />
       </div>
 
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '8px 40px' }}>
-          <HeadingMinimal title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor} size={sz} />
-          <div style={{ fontSize: sz, color: '#555', whiteSpace: 'pre-line' as const, lineHeight: 1.7 }}>{p.summary}</div>
+        <div className="px-6 sm:px-8 pt-2">
+          <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 40px 40px' }}>
+      <div className="px-6 sm:px-8 pb-8 sm:pb-10 space-y-5 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 18 }}>
-            <HeadingMinimal title={sectionLabel(type, language)} color={primaryColor} size={sz} />
-            {renderSection(type)}
+          <div key={type}>
+            <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-2" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-x-2 gap-y-1">
+                {data.skills.map((sk) => <span key={sk.id} className="text-xs sm:text-sm text-gray-600">{sk.name}<span className="text-gray-300 ms-1">·</span></span>)}
+              </div>
+            ) : renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -796,68 +639,46 @@ export function MinimalTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   6. CORPORATE TEMPLATE – Top bar + side accent, box sections               */
-/*                                                                              */
+/*   6. CORPORATE TEMPLATE - "المؤسسي"                                         */
 /* ============================================================================ */
 
 export function CorporateTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'skills': return <SkillsBadges data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Top color bar */}
-      <div style={{ height: 6, backgroundColor: primaryColor }} />
-
-      <div style={{ display: 'flex' }}>
-        {/* Side accent line */}
-        <div style={{ width: 4, backgroundColor: primaryColor, flexShrink: 0 }} />
-
-        <div style={{ flex: 1 }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Top bar */}
+      <div className="h-1.5" style={{ backgroundColor: primaryColor }} />
+      <div className="flex">
+        {/* Side accent */}
+        <div className="w-1 shrink-0" style={{ backgroundColor: primaryColor }} />
+        <div className="flex-1 min-w-0">
           {/* Header */}
-          <div style={{ padding: '24px 28px 16px', display: 'flex', gap: 16, alignItems: 'center' }}>
-            {p.photo && (
-              <div style={{ flexShrink: 0 }}>
-                <img src={p.photo} alt="" style={{ width: 64, height: 64, borderRadius: 4, objectFit: 'cover', border: `2px solid ${primaryColor}30` }} />
-              </div>
-            )}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: sz + 10, fontWeight: 800, color: '#1a1a1a', marginBottom: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-              <div style={{ fontSize: sz + 2, fontWeight: 500, color: primaryColor, marginBottom: 6 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-              <ContactItems info={p} color={primaryColor} lang={language} size={sz - 1} />
+          <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 flex items-center gap-3 sm:gap-4">
+            {p.photo && <Avatar photo={p.photo} name={p.fullName} color={primaryColor} size="sm" />}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+              <p className="text-xs sm:text-sm font-medium" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+              <div className="mt-1.5"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
             </div>
           </div>
 
           {/* Summary */}
           {p.summary && (
-            <div style={{ padding: '4px 28px 8px' }}>
-              <HeadingBox title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor} size={sz} />
-              <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+            <div className="px-4 sm:px-6 pt-2">
+              <h2 className="inline-block text-xs sm:text-sm font-bold uppercase text-white px-2.5 py-1 rounded mb-2" style={{ backgroundColor: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
             </div>
           )}
 
-          {/* Sections in a grid-like layout */}
-          <div style={{ padding: '4px 28px 28px' }}>
+          {/* Sections */}
+          <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-2">
             {sections.map((type) => (
-              <div key={type} style={{ marginTop: 14, padding: 12, backgroundColor: '#f9fafb', borderRadius: 4, borderLeft: `3px solid ${primaryColor}` }}>
-                <HeadingBox title={sectionLabel(type, language)} color={primaryColor} size={sz} />
-                {renderSection(type)}
+              <div key={type} className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3 sm:p-4 border-s-2" style={{ borderStartColor: primaryColor }}>
+                <h2 className="inline-block text-xs sm:text-sm font-bold uppercase text-white px-2.5 py-1 rounded mb-2" style={{ backgroundColor: primaryColor }}>{sectionLabel(type, language)}</h2>
+                {renderSection(type, data, primaryColor, language)}
               </div>
             ))}
           </div>
@@ -868,90 +689,21 @@ export function CorporateTemplate({ data, primaryColor, fontFamily, fontSize, la
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   7. ATS TEMPLATE – Maximum parseability                                    */
-/*                                                                              */
+/*   7. ATS TEMPLATE - "متوافق مع ATS"                                         */
 /* ============================================================================ */
 
 export function ATSTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return (
-        <div>
-          {data.experience.map((exp) => (
-            <div key={exp.id} style={{ marginBottom: 10 }}>
-              <div style={{ fontWeight: 700, fontSize: sz + 1 }}>{exp.jobTitle}</div>
-              <div style={{ fontSize: sz, color: '#333' }}>{exp.company}</div>
-              <div style={{ fontSize: sz - 1, color: '#666' }}>{formatDateRange(exp.startDate, exp.endDate, exp.current, language)}</div>
-              {exp.description && <div style={{ fontSize: sz, color: '#444', marginTop: 3, whiteSpace: 'pre-line' as const }}>{exp.description}</div>}
-            </div>
-          ))}
-        </div>
-      );
-      case 'education': return (
-        <div>
-          {data.education.map((edu) => (
-            <div key={edu.id} style={{ marginBottom: 8 }}>
-              <div style={{ fontWeight: 700, fontSize: sz + 1 }}>{edu.major}</div>
-              <div style={{ fontSize: sz, color: '#333' }}>{edu.institution}{edu.degree ? ` — ${DEGREE_LABELS[language][edu.degree as DegreeType] || edu.degree}` : ''}</div>
-              <div style={{ fontSize: sz - 1, color: '#666' }}>{edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}</div>
-              {edu.description && <div style={{ fontSize: sz, color: '#444', marginTop: 2 }}>{edu.description}</div>}
-            </div>
-          ))}
-        </div>
-      );
-      case 'skills': return (
-        <div style={{ fontSize: sz, color: '#333' }}>
-          {data.skills.map((sk, i) => (
-            <span key={sk.id}>{sk.name}{i < data.skills.length - 1 ? ' | ' : ''}</span>
-          ))}
-        </div>
-      );
-      case 'certifications': return (
-        <div>
-          {data.certifications.map((c) => (
-            <div key={c.id} style={{ marginBottom: 4 }}>
-              <span style={{ fontWeight: 600 }}>{c.name}</span>{c.issuer ? ` — ${c.issuer}` : ''}{c.date ? ` (${c.date})` : ''}
-            </div>
-          ))}
-        </div>
-      );
-      case 'languages': return (
-        <div style={{ fontSize: sz, color: '#333' }}>
-          {data.languages.map((l, i) => (
-            <span key={l.id}>{l.name}: {LANGUAGE_LEVEL_LABELS[language][l.level]}{i < data.languages.length - 1 ? ' | ' : ''}</span>
-          ))}
-        </div>
-      );
-      case 'projects': return (
-        <div>
-          {data.projects.map((p) => (
-            <div key={p.id} style={{ marginBottom: 8 }}>
-              <span style={{ fontWeight: 700, fontSize: sz + 1 }}>{p.name}</span>
-              {p.url && <span style={{ fontSize: sz - 1, color: '#666', marginInlineStart: 6 }}>({p.url})</span>}
-              {p.description && <div style={{ fontSize: sz, color: '#444', marginTop: 2 }}>{p.description}</div>}
-              {p.technologies.length > 0 && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 1 }}>Technologies: {p.technologies.join(', ')}</div>}
-            </div>
-          ))}
-        </div>
-      );
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, padding: '32px 40px' }}>
-      {/* Header – plain text, no graphics */}
-      <div style={{ marginBottom: 16, textAlign: 'center' as const }}>
-        <div style={{ fontSize: sz + 12, fontWeight: 800, color: '#1a1a1a', marginBottom: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-        <div style={{ fontSize: sz + 2, fontWeight: 500, color: '#333', marginBottom: 8 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-        <div style={{ fontSize: sz - 1, color: '#555', display: 'flex', flexWrap: 'wrap' as const, justifyContent: 'center', gap: '4px 14px' }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Centered header - no graphics */}
+      <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 text-center">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        <p className="text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-xs sm:text-sm text-gray-500">
           {p.email && <span>{p.email}</span>}
           {p.phone && <span>{p.phone}</span>}
           {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
@@ -960,105 +712,85 @@ export function ATSTemplate({ data, primaryColor, fontFamily, fontSize, language
           {p.github && <span>{p.github}</span>}
         </div>
       </div>
+      <div className="h-px bg-gray-900 dark:bg-gray-100 mx-6 sm:mx-8" />
 
-      <div style={{ height: 1, backgroundColor: '#1a1a1a', marginBottom: 12 }} />
-
-      {/* Summary */}
       {p.summary && (
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 4, color: '#1a1a1a' }}>
-            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-          </div>
-          <div style={{ fontSize: sz, color: '#333', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-6 sm:px-8 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-1.5">{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      {sections.map((type) => (
-        <div key={type} style={{ marginTop: 14 }}>
-          <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6, color: '#1a1a1a', borderBottom: '1px solid #1a1a1a', paddingBottom: 2 }}>
-            {sectionLabel(type, language)}
+      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-3">
+        {sections.map((type) => (
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white pb-1 mb-2 border-b border-gray-900 dark:border-gray-100">{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? (
+              <p className="text-xs sm:text-sm text-gray-700">{data.skills.map((sk, i) => <span key={sk.id}>{sk.name}{i < data.skills.length - 1 ? ' | ' : ''}</span>)}</p>
+            ) : type === 'languages' ? (
+              <p className="text-xs sm:text-sm text-gray-700">{data.languages.map((l, i) => <span key={l.id}>{l.name}: {LANGUAGE_LEVEL_LABELS[language][l.level]}{i < data.languages.length - 1 ? ' | ' : ''}</span>)}</p>
+            ) : renderSection(type, data, primaryColor, language)}
           </div>
-          {renderSection(type)}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   8. MEDICAL TEMPLATE – Clinical feel, cross accent                         */
-/*                                                                              */
+/*   8. MEDICAL TEMPLATE - "الطبي"                                             */
 /* ============================================================================ */
 
 export function MedicalTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'skills': return <SkillsBars data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Medical cross accent in header */}
-      <div style={{ backgroundColor: primaryColor, padding: '24px 32px 20px', position: 'relative' as const, overflow: 'hidden' as const }}>
-        {/* Decorative cross */}
-        <div style={{ position: 'absolute' as const, top: 10, [isRtl(language) ? 'left' : 'right']: 20, opacity: 0.12 }}>
-          <div style={{ width: 60, height: 20, backgroundColor: '#fff', borderRadius: 3, position: 'absolute' as const, top: 20, left: 0 }} />
-          <div style={{ width: 20, height: 60, backgroundColor: '#fff', borderRadius: 3, position: 'absolute' as const, top: 0, left: 20 }} />
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Medical header */}
+      <div className="px-5 sm:px-6 py-5 text-white relative overflow-hidden" style={{ backgroundColor: primaryColor }}>
+        {/* Medical cross motif */}
+        <div className="absolute top-2 opacity-10" style={{ [isR ? 'left' : 'right']: '16px' }}>
+          <div className="relative w-16 h-16">
+            <div className="absolute top-1/2 left-0 w-full h-4 bg-white rounded -translate-y-1/2" />
+            <div className="absolute left-1/2 top-0 h-full w-4 bg-white rounded -translate-x-1/2" />
+          </div>
         </div>
-
-        <div style={{ display: 'flex', gap: 18, alignItems: 'center', position: 'relative' as const, zIndex: 1 }}>
+        <div className="flex items-center gap-3 sm:gap-4 relative">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.5)' }} />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white/40 shrink-0">
+              <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div style={{ flex: 1, color: '#ffffff' }}>
-            <div style={{ fontSize: sz + 12, fontWeight: 800, marginBottom: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 3, fontWeight: 400, opacity: 0.9, marginBottom: 8 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, opacity: 0.85 }}>
-              {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} /> {p.email}</span>}
-              {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} /> {p.phone}</span>}
-              {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} /> {p.website}</span>}
-              {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} /> {p.linkedin}</span>}
-              {p.github && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Github size={10} /> {p.github}</span>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm opacity-90 mt-0.5">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs opacity-85">
+              {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Thin accent line */}
-      <div style={{ height: 3, backgroundColor: primaryColor, opacity: 0.3 }} />
+      <div className="h-1" style={{ backgroundColor: primaryColor, opacity: 0.3 }} />
 
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '16px 32px 8px' }}>
-          <HeadingLine title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor} size={sz} />
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <HeadingLine title={sectionLabel(type, language)} color={primaryColor} size={sz} />
-            {renderSection(type)}
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1067,85 +799,59 @@ export function MedicalTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   9. ENGINEERING TEMPLATE – Blueprint-style header, grid feel               */
-/*                                                                              */
+/*   9. ENGINEERING TEMPLATE - "الهندسي"                                       */
 /* ============================================================================ */
 
 export function EngineeringTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'skills': return <SkillsBars data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Blueprint-style header with grid pattern */}
-      <div style={{ backgroundColor: '#1a1a1a', padding: '28px 32px 20px', position: 'relative' as const, overflow: 'hidden' as const }}>
-        {/* Grid pattern overlay */}
-        <div style={{
-          position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0,
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`,
-          backgroundSize: '20px 20px',
-        }} />
-
-        <div style={{ display: 'flex', gap: 18, alignItems: 'center', position: 'relative' as const, zIndex: 1 }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Blueprint header */}
+      <div className="bg-gray-900 dark:bg-black px-5 sm:px-6 py-5 relative overflow-hidden">
+        {/* Grid pattern */}
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        <div className="flex items-center gap-3 sm:gap-4 relative">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 72, height: 72, borderRadius: 4, objectFit: 'cover', border: `2px solid ${primaryColor}` }} />
+            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded overflow-hidden border-2 shrink-0" style={{ borderColor: primaryColor }}>
+              <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div style={{ flex: 1, color: '#ffffff' }}>
-            <div style={{ fontSize: sz + 12, fontWeight: 800, letterSpacing: 1, marginBottom: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 2, fontWeight: 400, color: primaryColor, fontFamily: '"Courier New", monospace', marginBottom: 8, letterSpacing: 0.5 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, color: '#aaa' }}>
-              {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} /> {p.email}</span>}
-              {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} /> {p.phone}</span>}
-              {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} /> {p.website}</span>}
-              {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} /> {p.linkedin}</span>}
-              {p.github && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Github size={10} /> {p.github}</span>}
+          <div className="min-w-0 flex-1 text-white">
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm font-mono mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs text-gray-400">
+              {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
             </div>
           </div>
         </div>
-
-        {/* Bottom accent line */}
-        <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 3, backgroundColor: primaryColor }} />
+        <div className="absolute bottom-0 inset-x-0 h-1" style={{ backgroundColor: primaryColor }} />
       </div>
 
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '16px 32px 8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <div style={{ width: 8, height: 8, backgroundColor: primaryColor, transform: 'rotate(45deg)' }} />
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 1, color: '#1a1a1a' }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</div>
-          </div>
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const, borderLeft: `2px solid ${primaryColor}30`, paddingInlineStart: 12 }}>{p.summary}</div>
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2">
+            <span className="w-2 h-2 rotate-45 shrink-0" style={{ backgroundColor: primaryColor }} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line ps-4 border-s-2" style={{ borderStartColor: primaryColor + '30' }}>{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <div style={{ width: 8, height: 8, backgroundColor: primaryColor, transform: 'rotate(45deg)' }} />
-              <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 1, color: '#1a1a1a' }}>{sectionLabel(type, language)}</div>
-            </div>
-            {renderSection(type)}
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2">
+              <span className="w-2 h-2 rotate-45 shrink-0" style={{ backgroundColor: primaryColor }} />
+              {sectionLabel(type, language)}
+            </h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1154,114 +860,55 @@ export function EngineeringTemplate({ data, primaryColor, fontFamily, fontSize, 
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   10. ACADEMIC TEMPLATE – Publication-style, no photo default               */
-/*                                                                              */
+/*   10. ACADEMIC TEMPLATE - "الأكاديمي"                                       */
 /* ============================================================================ */
 
 export function AcademicTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return (
-        <div>
-          {data.education.map((edu) => (
-            <div key={edu.id} style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1 }}>{edu.major}</div>
-                  <div style={{ fontSize: sz, color: '#555', fontStyle: 'italic' }}>{edu.institution}{edu.degree ? ` — ${DEGREE_LABELS[language][edu.degree as DegreeType] || edu.degree}` : ''}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: '#888', whiteSpace: 'nowrap' as const }}>{edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}</div>
-              </div>
-              {edu.description && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 2, fontStyle: 'italic' }}>{edu.description}</div>}
-            </div>
-          ))}
-        </div>
-      );
-      case 'skills': return (
-        <div>
-          {data.skills.reduce<string[][]>((acc, sk, i) => {
-            const col = i % 2;
-            if (!acc[col]) acc[col] = [];
-            acc[col].push(sk.name);
-            return acc;
-          }, []).map((col, ci) => (
-            <div key={ci} style={{ flex: 1, fontSize: sz, color: '#444' }}>
-              {col.map((name, ni) => <div key={ni} style={{ marginBottom: 2, paddingInlineStart: 12, position: 'relative' as const }}>• {name}</div>)}
-            </div>
-          ))}
-          <div style={{ display: 'flex', gap: 24 }}>
-            {data.skills.reduce<string[][]>((acc, sk, i) => {
-              const col = i % 2;
-              if (!acc[col]) acc[col] = [];
-              acc[col].push(sk.name);
-              return acc;
-            }, []).map((col, ci) => (
-              <div key={ci} style={{ flex: 1, fontSize: sz, color: '#444' }}>
-                {col.map((name, ni) => <div key={ni} style={{ marginBottom: 2, paddingInlineStart: 12 }}>• {name}</div>)}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return (
-        <div>
-          {data.projects.map((proj) => (
-            <div key={proj.id} style={{ marginBottom: 10 }}>
-              <div style={{ fontWeight: 700, fontSize: sz + 1, fontStyle: 'italic' }}>{proj.name}</div>
-              {proj.description && <div style={{ fontSize: sz, color: '#444', marginTop: 2 }}>{proj.description}</div>}
-              {proj.technologies.length > 0 && <div style={{ fontSize: sz - 1, color: '#777', marginTop: 2, fontStyle: 'italic' }}>Keywords: {proj.technologies.join(', ')}</div>}
-            </div>
-          ))}
-        </div>
-      );
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Header – academic, centered, no photo */}
-      <div style={{ padding: '36px 40px 20px', textAlign: 'center' as const, borderBottom: `2px solid ${primaryColor}` }}>
-        <div style={{ fontSize: sz + 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 4, letterSpacing: 0.5 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-        {p.jobTitle && <div style={{ fontSize: sz + 2, color: primaryColor, marginBottom: 8, fontStyle: 'italic' }}>{p.jobTitle}</div>}
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, justifyContent: 'center', gap: '4px 16px', fontSize: sz - 1, color: '#555' }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Centered header, no photo */}
+      <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 text-center border-b-2" style={{ borderColor: primaryColor }}>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        {p.jobTitle && <p className="text-sm sm:text-base italic mt-1" style={{ color: primaryColor }}>{p.jobTitle}</p>}
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-xs sm:text-sm text-gray-500">
           {p.email && <span>{p.email}</span>}
           {p.phone && <span>{p.phone}</span>}
           {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
           {p.website && <span>{p.website}</span>}
           {p.linkedin && <span>{p.linkedin}</span>}
-          {p.github && <span>{p.github}</span>}
         </div>
       </div>
 
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '16px 40px 8px' }}>
-          <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 1, color: primaryColor, marginBottom: 6, textAlign: 'center' as const }}>
-            {language === 'ar' ? 'نبذة احترافية' : 'Research Interests & Summary'}
-          </div>
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const, textAlign: 'justify' as const }}>{p.summary}</div>
+        <div className="px-6 sm:px-8 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-center mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Research Interests & Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line text-justify">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections – education first is typical for academic */}
-      <div style={{ padding: '8px 40px 40px' }}>
+      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 16 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 1, color: primaryColor, marginBottom: 8, paddingBottom: 4, borderBottom: `1px solid ${primaryColor}40` }}>
-              {sectionLabel(type, language)}
-            </div>
-            {renderSection(type)}
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                {data.skills.map((sk) => <div key={sk.id} className="text-xs sm:text-sm text-gray-600 ps-3">• {sk.name}</div>)}
+              </div>
+            ) : type === 'projects' ? (
+              <div className="space-y-2">
+                {data.projects.map((proj) => (
+                  <div key={proj.id}>
+                    <h4 className="text-xs sm:text-sm font-bold italic">{proj.name}</h4>
+                    {proj.description && <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">{proj.description}</p>}
+                    {proj.technologies.length > 0 && <p className="text-[10px] sm:text-xs text-gray-400 italic mt-0.5">Keywords: {proj.technologies.join(', ')}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1270,105 +917,59 @@ export function AcademicTemplate({ data, primaryColor, fontFamily, fontSize, lan
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   11. ELEGANT TEMPLATE – Gradient header, serif headings                    */
-/*                                                                              */
+/*   11. ELEGANT TEMPLATE - "الأنيق"                                           */
 /* ============================================================================ */
 
 export function ElegantTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const serifFont = '"Playfair Display", Georgia, serif';
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'skills': return <SkillsBadges data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'certifications': return <CertificationsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={primaryColor} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={primaryColor} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
       {/* Gradient header */}
-      <div style={{
-        background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc, ${primaryColor}88)`,
-        padding: '32px 36px 24px',
-        position: 'relative' as const,
-        overflow: 'hidden' as const,
-      }}>
-        {/* Decorative circle */}
-        <div style={{
-          position: 'absolute' as const,
-          top: -30,
-          [isRtl(language) ? 'left' : 'right']: -30,
-          width: 120,
-          height: 120,
-          borderRadius: '50%',
-          border: '2px solid rgba(255,255,255,0.1)',
-        }} />
-        <div style={{
-          position: 'absolute' as const,
-          top: -10,
-          [isRtl(language) ? 'left' : 'right']: -10,
-          width: 80,
-          height: 80,
-          borderRadius: '50%',
-          border: '2px solid rgba(255,255,255,0.08)',
-        }} />
-
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center', position: 'relative' as const, zIndex: 1 }}>
+      <div className="relative px-5 sm:px-6 py-5 sm:py-6 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc, ${primaryColor}88)` }}>
+        {/* Decorative circles */}
+        <div className="absolute -top-8 w-24 h-24 sm:w-32 sm:h-32 rounded-full border border-white/10" style={{ [isR ? 'left' : 'right']: '-20px' }} />
+        <div className="absolute -top-3 w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-white/8" style={{ [isR ? 'left' : 'right']: '-5px' }} />
+        <div className="flex items-center gap-3 sm:gap-4 relative">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.5)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }} />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white/50 shadow-lg shrink-0">
+              <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div style={{ flex: 1, color: '#ffffff' }}>
-            <div style={{ fontFamily: serifFont, fontSize: sz + 16, fontWeight: 700, marginBottom: 2, letterSpacing: 0.5 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 2, fontWeight: 300, opacity: 0.9, marginBottom: 10, letterSpacing: 1 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, opacity: 0.85 }}>
-              {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} /> {p.email}</span>}
-              {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} /> {p.phone}</span>}
-              {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} /> {p.website}</span>}
-              {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} /> {p.linkedin}</span>}
-              {p.github && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Github size={10} /> {p.github}</span>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-bold" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm font-light opacity-90 mt-0.5 tracking-wide">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs opacity-85">
+              {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Thin gold/accent line */}
-      <div style={{ height: 2, background: `linear-gradient(90deg, ${primaryColor}, transparent)` }} />
-
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '16px 36px 8px' }}>
-          <div style={{ fontFamily: serifFont, fontWeight: 700, fontSize: sz + 4, color: primaryColor, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif', color: primaryColor }}>
             {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-            <div style={{ flex: 1, height: 1, backgroundColor: `${primaryColor}30` }} />
-          </div>
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+            <span className="flex-1 h-px" style={{ backgroundColor: primaryColor + '30' }} />
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 36px 36px' }}>
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <div style={{ fontFamily: serifFont, fontWeight: 700, fontSize: sz + 4, color: primaryColor, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif', color: primaryColor }}>
               {sectionLabel(type, language)}
-              <div style={{ flex: 1, height: 1, backgroundColor: `${primaryColor}30` }} />
-            </div>
-            {renderSection(type)}
+              <span className="flex-1 h-px" style={{ backgroundColor: primaryColor + '30' }} />
+            </h2>
+            {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1377,188 +978,60 @@ export function ElegantTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   12. PREMIUM DARK TEMPLATE – Dark theme, gold/amber accents                */
-/*                                                                              */
+/*   12. PREMIUM DARK TEMPLATE - "داكن فاخر"                                   */
 /* ============================================================================ */
 
 export function PremiumDarkTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
 
-  const darkBg = '#1a1a2e';
-  const darkerBg = '#16162a';
-  const cardBg = '#222240';
-  const textPrimary = '#f0f0f0';
-  const textSecondary = '#a0a0b8';
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return (
-        <div>
-          {data.experience.map((exp) => (
-            <div key={exp.id} style={{ marginBottom: 12, padding: 10, backgroundColor: cardBg, borderRadius: 6, borderLeft: `3px solid ${primaryColor}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1, color: textPrimary }}>{exp.jobTitle}</div>
-                  <div style={{ fontSize: sz, color: primaryColor, fontWeight: 500 }}>{exp.company}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: textSecondary, whiteSpace: 'nowrap' as const }}>
-                  {formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
-                </div>
-              </div>
-              {exp.description && (
-                <div style={{ fontSize: sz - 1, color: textSecondary, marginTop: 4, whiteSpace: 'pre-line' as const }}>{exp.description}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      case 'education': return (
-        <div>
-          {data.education.map((edu) => (
-            <div key={edu.id} style={{ marginBottom: 10, padding: 10, backgroundColor: cardBg, borderRadius: 6, borderLeft: `3px solid ${primaryColor}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1, color: textPrimary }}>{edu.major}</div>
-                  <div style={{ fontSize: sz, color: textSecondary }}>{edu.institution}{edu.degree ? ` — ${DEGREE_LABELS[language][edu.degree as DegreeType] || edu.degree}` : ''}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: textSecondary, whiteSpace: 'nowrap' as const }}>{edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'skills': return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-          {data.skills.map((sk) => (
-            <span key={sk.id} style={{
-              padding: '4px 10px',
-              borderRadius: 4,
-              fontSize: sz - 1,
-              fontWeight: 500,
-              backgroundColor: primaryColor + '20',
-              color: primaryColor,
-              border: `1px solid ${primaryColor}30`,
-            }}>
-              {sk.name}
-            </span>
-          ))}
-        </div>
-      );
-      case 'certifications': return (
-        <div>
-          {data.certifications.map((c) => (
-            <div key={c.id} style={{ marginBottom: 6, padding: 8, backgroundColor: cardBg, borderRadius: 6 }}>
-              <span style={{ fontWeight: 600, fontSize: sz, color: textPrimary }}>{c.name}</span>
-              <span style={{ fontSize: sz - 1, color: textSecondary, marginInlineStart: 6 }}>{c.issuer}{c.date ? ` · ${c.date}` : ''}</span>
-            </div>
-          ))}
-        </div>
-      );
-      case 'languages': return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px 16px' }}>
-          {data.languages.map((l) => {
-            const filled = getLanguageDots(l.level);
-            return (
-              <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: sz, fontWeight: 500, color: textPrimary }}>{l.name}</span>
-                <div style={{ display: 'flex', gap: 3 }}>
-                  {[1, 2, 3, 4, 5].map((dot) => (
-                    <div key={dot} style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: dot <= filled ? primaryColor : '#333355' }} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-      case 'projects': return (
-        <div>
-          {data.projects.map((proj) => (
-            <div key={proj.id} style={{ marginBottom: 10, padding: 10, backgroundColor: cardBg, borderRadius: 6, borderLeft: `3px solid ${primaryColor}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontWeight: 700, fontSize: sz + 1, color: textPrimary }}>{proj.name}</span>
-                {proj.url && <ExternalLink size={10} style={{ color: primaryColor }} />}
-              </div>
-              {proj.description && <div style={{ fontSize: sz - 1, color: textSecondary, marginTop: 2 }}>{proj.description}</div>}
-              {proj.technologies.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4, marginTop: 4 }}>
-                  {proj.technologies.map((t) => (
-                    <span key={t} style={{ fontSize: sz - 2, padding: '2px 6px', borderRadius: 3, backgroundColor: primaryColor + '15', color: primaryColor, border: `1px solid ${primaryColor}25` }}>{t}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      default: return null;
-    }
-  };
-
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, backgroundColor: darkBg, color: textPrimary }}>
-      {/* Dark header */}
-      <div style={{ backgroundColor: darkerBg, padding: '28px 32px 20px', position: 'relative' as const, overflow: 'hidden' as const }}>
-        {/* Subtle radial glow */}
-        <div style={{
-          position: 'absolute' as const,
-          top: -40,
-          [isRtl(language) ? 'left' : 'right']: -40,
-          width: 200,
-          height: 200,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${primaryColor}15, transparent)`,
-        }} />
-
-        <div style={{ display: 'flex', gap: 18, alignItems: 'center', position: 'relative' as const, zIndex: 1 }}>
+    <div className="w-full max-w-lg mx-auto bg-[#1a1a2e] text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Header */}
+      <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${primaryColor}`, boxShadow: `0 0 20px ${primaryColor}30` }} />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: primaryColor, boxShadow: `0 0 12px ${primaryColor}40` }}>
+              <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: sz + 14, fontWeight: 800, color: textPrimary, marginBottom: 2, letterSpacing: 0.5 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 2, fontWeight: 400, color: primaryColor, marginBottom: 10, letterSpacing: 1 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, color: textSecondary }}>
-              {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} style={{ color: primaryColor }} /> {p.email}</span>}
-              {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} style={{ color: primaryColor }} /> {p.phone}</span>}
-              {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} style={{ color: primaryColor }} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} style={{ color: primaryColor }} /> {p.website}</span>}
-              {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} style={{ color: primaryColor }} /> {p.linkedin}</span>}
-              {p.github && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Github size={10} style={{ color: primaryColor }} /> {p.github}</span>}
-            </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
           </div>
         </div>
-
-        {/* Bottom accent line */}
-        <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}40, transparent)` }} />
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
+          {p.email && <span className="flex items-center gap-1"><Mail size={11} style={{ color: primaryColor + '80' }} />{p.email}</span>}
+          {p.phone && <span className="flex items-center gap-1"><Phone size={11} style={{ color: primaryColor + '80' }} />{p.phone}</span>}
+          {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} style={{ color: primaryColor + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+        </div>
       </div>
 
-      {/* Summary */}
+      {/* Glow divider */}
+      <div className="mx-5 sm:mx-6 h-px" style={{ background: `linear-gradient(90deg, transparent, ${primaryColor}60, transparent)` }} />
+
       {p.summary && (
-        <div style={{ padding: '16px 32px 8px' }}>
-          <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 1.5, color: primaryColor, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 16, height: 2, backgroundColor: primaryColor, display: 'inline-block' }} />
-            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-          </div>
-          <div style={{ fontSize: sz, color: textSecondary, whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 1.5, color: primaryColor, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 16, height: 2, backgroundColor: primaryColor, display: 'inline-block' }} />
-              {sectionLabel(type, language)}
-            </div>
-            {renderSection(type)}
+          <div key={type} className="bg-[#16213e] rounded-xl p-3 sm:p-4 border border-white/5">
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-1.5">
+                {data.skills.map((sk) => (
+                  <span key={sk.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: primaryColor + '25', color: primaryColor, boxShadow: `0 0 6px ${primaryColor}20` }}>
+                    {sk.name}
+                  </span>
+                ))}
+              </div>
+            ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+              renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1567,134 +1040,64 @@ export function PremiumDarkTemplate({ data, primaryColor, fontFamily, fontSize, 
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   13. LUXURY TEMPLATE – Dark navy/charcoal with gold accents                 */
-/*                                                                              */
+/*   13. LUXURY TEMPLATE - "الفاخر"                                            */
 /* ============================================================================ */
 
 export function LuxuryTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const gold = '#D97706';
-  const darkBg = '#1B2A4A';
-  const charcoalBg = '#0F1B33';
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return (
-        <div>
-          {data.experience.map((exp) => (
-            <div key={exp.id} style={{ marginBottom: 10, padding: '8px 10px', borderLeft: `2px solid ${gold}`, backgroundColor: 'rgba(217,119,6,0.04)', borderRadius: '0 4px 4px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a' }}>{exp.jobTitle}</div>
-                  <div style={{ fontSize: sz, color: gold, fontWeight: 500 }}>{exp.company}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: '#999', whiteSpace: 'nowrap' as const }}>
-                  {formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
-                </div>
-              </div>
-              {exp.description && (
-                <div style={{ fontSize: sz - 1, color: '#666', marginTop: 2, whiteSpace: 'pre-line' as const }}>{exp.description}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      case 'education': return (
-        <div>
-          {data.education.map((edu) => (
-            <div key={edu.id} style={{ marginBottom: 8, padding: '6px 10px', borderLeft: `2px solid ${gold}`, backgroundColor: 'rgba(217,119,6,0.04)', borderRadius: '0 4px 4px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a' }}>{edu.major}</div>
-                  <div style={{ fontSize: sz, color: '#555' }}>{edu.institution}{edu.degree ? ` — ${DEGREE_LABELS[language][edu.degree as DegreeType] || edu.degree}` : ''}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: '#999', whiteSpace: 'nowrap' as const }}>{edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'skills': return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-          {data.skills.map((sk) => (
-            <span key={sk.id} style={{
-              padding: '3px 10px',
-              borderRadius: 3,
-              fontSize: sz - 1,
-              fontWeight: 500,
-              border: `1px solid ${gold}40`,
-              color: darkBg,
-              backgroundColor: 'rgba(217,119,6,0.08)',
-            }}>
-              {sk.name}<span style={{ opacity: 0.5, marginInlineStart: 3 }}>· {SKILL_LEVEL_LABELS[language][sk.level]}</span>
-            </span>
-          ))}
-        </div>
-      );
-      case 'certifications': return <CertificationsSection data={data} color={gold} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={gold} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={gold} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
+  const gold = '#D4A853';
 
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Dark navy header */}
-      <div style={{ backgroundColor: darkBg, color: '#f5f0e8', padding: '32px 32px 24px', position: 'relative' as const }}>
-        {/* Gold decorative line at top */}
-        <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${gold}, ${gold}80, ${gold}20, transparent)` }} />
-
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 82, height: 82, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${gold}`, boxShadow: `0 0 0 3px ${gold}30` }} />
-            </div>
-          )}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: sz + 16, fontWeight: 800, color: '#f5f0e8', marginBottom: 2, fontFamily: 'Georgia, serif', letterSpacing: 1 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 3, fontWeight: 400, color: gold, marginBottom: 10, letterSpacing: 1.5, textTransform: 'uppercase' as const }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, color: 'rgba(245,240,232,0.7)' }}>
-              {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} style={{ color: gold }} /> {p.email}</span>}
-              {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} style={{ color: gold }} /> {p.phone}</span>}
-              {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} style={{ color: gold }} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} style={{ color: gold }} /> {p.website}</span>}
-              {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} style={{ color: gold }} /> {p.linkedin}</span>}
-              {p.github && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Github size={10} style={{ color: gold }} /> {p.github}</span>}
-            </div>
+    <div className="w-full max-w-lg mx-auto bg-[#0f1729] text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Luxury header */}
+      <div className="px-5 sm:px-6 pt-6 sm:pt-8 pb-4 text-center">
+        {p.photo && (
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 mx-auto mb-3" style={{ borderColor: gold, boxShadow: `0 0 16px ${gold}30` }}>
+            <img src={p.photo} alt="" className="w-full h-full object-cover" />
           </div>
+        )}
+        <h1 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        <p className="text-xs sm:text-sm font-light mt-1 tracking-widest uppercase" style={{ color: gold }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        {/* Ornamental divider */}
+        <div className="flex items-center gap-2 mt-3 justify-center">
+          <div className="w-8 h-px" style={{ backgroundColor: gold + '40' }} />
+          <div className="w-1.5 h-1.5 rotate-45" style={{ backgroundColor: gold }} />
+          <div className="w-8 h-px" style={{ backgroundColor: gold + '40' }} />
         </div>
-
-        {/* Gold decorative bottom border */}
-        <div style={{ position: 'absolute' as const, bottom: 0, left: 32, right: 32, height: 1, backgroundColor: `${gold}40` }} />
-        <div style={{ position: 'absolute' as const, bottom: -1, left: 32, width: 60, height: 2, backgroundColor: gold }} />
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
+          {p.email && <span className="flex items-center gap-1"><Mail size={10} style={{ color: gold + '80' }} />{p.email}</span>}
+          {p.phone && <span className="flex items-center gap-1"><Phone size={10} style={{ color: gold + '80' }} />{p.phone}</span>}
+          {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} style={{ color: gold + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+        </div>
       </div>
 
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '20px 32px 8px' }}>
-          <div style={{ fontWeight: 700, fontSize: sz + 3, fontFamily: 'Georgia, serif', textTransform: 'uppercase' as const, letterSpacing: 1.5, color: darkBg, marginBottom: 6, paddingBottom: 4, borderBottom: `1px solid ${gold}30`, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ display: 'inline-block', width: 24, height: 2, backgroundColor: gold }} />
+        <div className="px-5 sm:px-6 pt-3">
+          <h2 className="flex items-center justify-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif', color: gold }}>
             {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-          </div>
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const, lineHeight: 1.6 }}>{p.summary}</div>
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line text-center">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 16 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, fontFamily: 'Georgia, serif', textTransform: 'uppercase' as const, letterSpacing: 1.5, color: darkBg, marginBottom: 8, paddingBottom: 4, borderBottom: `1px solid ${gold}30`, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ display: 'inline-block', width: 24, height: 2, backgroundColor: gold }} />
+          <div key={type} className="rounded-xl p-3 sm:p-4 border" style={{ borderColor: gold + '20', backgroundColor: 'rgba(212,168,83,0.04)' }}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif', color: gold }}>
               {sectionLabel(type, language)}
-            </div>
-            {renderSection(type)}
+            </h2>
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-1.5">
+                {data.skills.map((sk) => (
+                  <span key={sk.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border" style={{ borderColor: gold + '30', color: gold, backgroundColor: gold + '10' }}>
+                    {sk.name}
+                  </span>
+                ))}
+              </div>
+            ) : type === 'languages' ? <LanguageDots data={data} color={gold} lang={language} /> :
+              renderSection(type, data, gold, language)}
           </div>
         ))}
       </div>
@@ -1703,110 +1106,64 @@ export function LuxuryTemplate({ data, primaryColor, fontFamily, fontSize, langu
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   14. STARTUP TEMPLATE – Fresh green, card-style, tech-forward               */
-/*                                                                              */
+/*   14. STARTUP TEMPLATE - "الناشئ"                                           */
 /* ============================================================================ */
 
 export function StartupTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const green = '#059669';
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={green} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={green} lang={language} size={sz} />;
-      case 'skills': return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-          {data.skills.map((sk) => (
-            <span key={sk.id} style={{
-              padding: '3px 10px',
-              borderRadius: 20,
-              fontSize: sz - 1,
-              fontWeight: 500,
-              backgroundColor: '#ECFDF5',
-              color: green,
-              border: `1px solid ${green}30`,
-            }}>
-              {sk.name}
-            </span>
-          ))}
-        </div>
-      );
-      case 'certifications': return <CertificationsSection data={data} color={green} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={green} lang={language} size={sz} />;
-      case 'projects': return (
-        <div>
-          {data.projects.map((proj) => (
-            <div key={proj.id} style={{ marginBottom: 10, padding: 12, borderLeft: `3px solid ${green}`, backgroundColor: '#F0FDF4', borderRadius: '0 6px 6px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a' }}>{proj.name}</span>
-                {proj.url && <ExternalLink size={10} style={{ color: green }} />}
-              </div>
-              {proj.description && <div style={{ fontSize: sz - 1, color: '#555', marginTop: 2 }}>{proj.description}</div>}
-              {proj.technologies.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4, marginTop: 4 }}>
-                  {proj.technologies.map((t) => (
-                    <span key={t} style={{ fontSize: sz - 2, padding: '1px 8px', borderRadius: 10, backgroundColor: '#D1FAE5', color: '#065F46' }}>{t}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      default: return null;
-    }
-  };
 
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Bold green top section */}
-      <div style={{ backgroundColor: green, color: '#ffffff', padding: '28px 32px 22px', position: 'relative' as const }}>
-        <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Vibrant header */}
+      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4" style={{ background: `linear-gradient(135deg, ${primaryColor}20, ${primaryColor}08)` }}>
+        <div className="flex items-center gap-3 sm:gap-4">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 78, height: 78, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.6)' }} />
+            <div className="rounded-2xl overflow-hidden border-2 shrink-0 w-14 h-14 sm:w-18 sm:h-18" style={{ borderColor: primaryColor + '30' }}>
+              <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: sz + 14, fontWeight: 800, marginBottom: 2, letterSpacing: 0.5 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 2, fontWeight: 400, opacity: 0.9, marginBottom: 8, letterSpacing: 0.5 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, opacity: 0.85 }}>
-              {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} /> {p.email}</span>}
-              {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} /> {p.phone}</span>}
-              {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} /> {p.website}</span>}
-              {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} /> {p.linkedin}</span>}
-              {p.github && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Github size={10} /> {p.github}</span>}
-            </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm font-semibold mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
           </div>
         </div>
-        {/* Subtle pattern at bottom */}
-        <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 3, backgroundColor: 'rgba(0,0,0,0.15)' }} />
+        <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
       </div>
 
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '18px 32px 8px' }}>
-          <HeadingAccent title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={green} size={sz} />
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-4 sm:px-6 pt-3">
+          <SectionCard>
+            <SectionHeader icon={<User size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} />
+            <div className="px-4 sm:px-5 pb-4 pt-2"><p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p></div>
+          </SectionCard>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14, padding: '10px 14px', borderLeft: `3px solid ${green}`, backgroundColor: '#FAFAFA', borderRadius: '0 6px 6px 0' }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: green, marginBottom: 6 }}>
-              {sectionLabel(type, language)}
+          <SectionCard key={type}>
+            <SectionHeader icon={
+              type === 'experience' ? <Briefcase size={12} style={{ color: primaryColor }} /> :
+              type === 'education' ? <GraduationCap size={12} style={{ color: primaryColor }} /> :
+              type === 'skills' ? <Zap size={12} style={{ color: primaryColor }} /> :
+              type === 'certifications' ? <Award size={12} style={{ color: primaryColor }} /> :
+              type === 'languages' ? <Globe2 size={12} style={{ color: primaryColor }} /> :
+              <FolderKanban size={12} style={{ color: primaryColor }} />
+            } title={sectionLabel(type, language)} />
+            <div className="px-4 sm:px-5 pb-4 pt-2">
+              {type === 'skills' ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {data.skills.map((sk) => (
+                    <span key={sk.id} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: primaryColor + 'cc' }}>
+                      {sk.name}
+                    </span>
+                  ))}
+                </div>
+              ) : renderSection(type, data, primaryColor, language)}
             </div>
-            {renderSection(type)}
-          </div>
+          </SectionCard>
         ))}
       </div>
     </div>
@@ -1814,147 +1171,52 @@ export function StartupTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   15. CONSULTANT TEMPLATE – Deep blue, sidebar, diamond markers              */
-/*                                                                              */
+/*   15. CONSULTANT TEMPLATE - "الاستشاري"                                     */
 /* ============================================================================ */
 
 export function ConsultantTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const deepBlue = '#1E3A5F';
-
-  const sideSections = ['skills', 'certifications', 'languages'];
-  const mainSections = ['experience', 'education', 'projects'];
-  const sidebarItems = sideSections.filter((s) => sections.includes(s));
-  const mainItems = mainSections.filter((s) => sections.includes(s));
-
-  const renderSideSection = (type: string) => {
-    switch (type) {
-      case 'skills': return (
-        <div>
-          {data.skills.map((sk) => (
-            <div key={sk.id} style={{ marginBottom: 6 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: sz - 1, marginBottom: 2 }}>
-                <span style={{ fontWeight: 500 }}>{sk.name}</span>
-                <span style={{ opacity: 0.7, fontSize: sz - 2 }}>{SKILL_LEVEL_LABELS[language][sk.level]}</span>
-              </div>
-              <div style={{ height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 2, width: getSkillWidth(sk.level), backgroundColor: 'rgba(255,255,255,0.7)' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'certifications': return (
-        <div>
-          {data.certifications.map((c) => (
-            <div key={c.id} style={{ marginBottom: 6, fontSize: sz - 1 }}>
-              <div style={{ fontWeight: 600 }}>{c.name}</div>
-              <div style={{ opacity: 0.7 }}>{c.issuer}{c.date ? ` · ${c.date}` : ''}</div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'languages': return (
-        <div>
-          {data.languages.map((l) => {
-            const filled = getLanguageDots(l.level);
-            return (
-              <div key={l.id} style={{ marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: sz - 1, minWidth: 60 }}>{l.name}</span>
-                <div style={{ display: 'flex', gap: 2 }}>
-                  {[1, 2, 3, 4, 5].map((dot) => (
-                    <div key={dot} style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: dot <= filled ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.15)' }} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-      default: return null;
-    }
-  };
-
-  const renderMainSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={deepBlue} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={deepBlue} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={deepBlue} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
 
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, display: 'flex' }}>
-      {/* Sidebar – narrow ~25% */}
-      <div style={{
-        width: '25%',
-        backgroundColor: deepBlue,
-        color: '#ffffff',
-        padding: '28px 16px',
-        boxSizing: 'border-box' as const,
-      }}>
-        {p.photo && (
-          <div style={{ textAlign: 'center' as const, marginBottom: 14 }}>
-            <img src={p.photo} alt="" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.4)', margin: '0 auto', display: 'block' }} />
-          </div>
-        )}
-
-        <div style={{ textAlign: 'center' as const, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
-          <div style={{ fontSize: sz + 6, fontWeight: 800, marginBottom: 3 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-          <div style={{ fontSize: sz, opacity: 0.8, fontWeight: 400 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-        </div>
-
-        {/* Contact */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: sz, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ display: 'inline-block', width: 6, height: 6, backgroundColor: '#ffffff', transform: 'rotate(45deg)' }} />
-            {language === 'ar' ? 'تواصل' : 'Contact'}
-          </div>
-          {p.email && <div style={{ fontSize: sz - 2, marginBottom: 4, wordBreak: 'break-all' as const }}>{p.email}</div>}
-          {p.phone && <div style={{ fontSize: sz - 2, marginBottom: 4 }}>{p.phone}</div>}
-          {(p.city || p.country) && <div style={{ fontSize: sz - 2, marginBottom: 4 }}>{[p.city, p.country].filter(Boolean).join(', ')}</div>}
-          {p.website && <div style={{ fontSize: sz - 2, marginBottom: 4, wordBreak: 'break-all' as const }}>{p.website}</div>}
-          {p.linkedin && <div style={{ fontSize: sz - 2, marginBottom: 4, wordBreak: 'break-all' as const }}>{p.linkedin}</div>}
-          {p.github && <div style={{ fontSize: sz - 2, marginBottom: 4, wordBreak: 'break-all' as const }}>{p.github}</div>}
-        </div>
-
-        {/* Sidebar sections */}
-        {sidebarItems.map((type) => (
-          <div key={type} style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: sz, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ display: 'inline-block', width: 6, height: 6, backgroundColor: '#ffffff', transform: 'rotate(45deg)' }} />
-              {sectionLabel(type, language)}
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Header with subtle accent */}
+      <div className="flex">
+        <div className="w-1 shrink-0" style={{ backgroundColor: primaryColor + '30' }} />
+        <div className="flex-1 min-w-0 px-5 sm:px-6 pt-5 sm:pt-6 pb-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {p.photo && <Avatar photo={p.photo} name={p.fullName} color={primaryColor} size="md" />}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+              <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+              <div className="mt-1.5"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
             </div>
-            {renderSideSection(type)}
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Main content */}
-      <div style={{ width: '75%', padding: '28px 24px' }}>
-        {p.summary && (
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: deepBlue, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: deepBlue, transform: 'rotate(45deg)' }} />
-              {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-            </div>
-            <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
-          </div>
-        )}
+      <div className="h-px mx-5 sm:mx-6" style={{ backgroundColor: primaryColor + '20' }} />
 
-        {mainItems.map((type) => (
-          <div key={type} style={{ marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: deepBlue, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: deepBlue, transform: 'rotate(45deg)' }} />
+      {p.summary && (
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+            <span className="w-1 h-4 rounded" style={{ backgroundColor: primaryColor }} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
+        </div>
+      )}
+
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+        {sections.map((type) => (
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+              <span className="w-1 h-4 rounded" style={{ backgroundColor: primaryColor }} />
               {sectionLabel(type, language)}
-            </div>
-            {renderMainSection(type)}
+            </h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1963,139 +1225,73 @@ export function ConsultantTemplate({ data, primaryColor, fontFamily, fontSize, l
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   16. SOFTWARE TEMPLATE – Blue/cyan tech, grid lines, monospace              */
-/*                                                                              */
+/*   16. SOFTWARE TEMPLATE - "المبرمج"                                         */
 /* ============================================================================ */
 
 export function SoftwareTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const blue = '#2563EB';
-  const cyan = '#06B6D4';
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return (
-        <div>
-          {data.experience.map((exp) => (
-            <div key={exp.id} style={{ marginBottom: 12, padding: '8px 12px', borderLeft: `2px solid ${blue}`, backgroundColor: '#F8FAFC', borderRadius: '0 4px 4px 0', position: 'relative' as const }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a', fontFamily: '"Courier New", monospace' }}>{exp.jobTitle}</div>
-                  <div style={{ fontSize: sz, color: blue, fontWeight: 500 }}>{exp.company}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: '#999', whiteSpace: 'nowrap' as const, fontFamily: '"Courier New", monospace' }}>
-                  {formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
-                </div>
-              </div>
-              {exp.description && (
-                <div style={{ fontSize: sz - 1, color: '#666', marginTop: 3, whiteSpace: 'pre-line' as const }}>{exp.description}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      case 'education': return <EducationSection data={data} color={blue} lang={language} size={sz} />;
-      case 'skills': return (
-        <div>
-          {data.skills.map((sk) => (
-            <div key={sk.id} style={{ marginBottom: 7 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: sz - 1, marginBottom: 2 }}>
-                <span style={{ fontWeight: 500, fontFamily: '"Courier New", monospace' }}>{sk.name}</span>
-                <span style={{ color: '#888', fontSize: sz - 2 }}>{SKILL_LEVEL_LABELS[language][sk.level]}</span>
-              </div>
-              <div style={{ height: 5, borderRadius: 3, backgroundColor: '#E2E8F0', overflow: 'hidden', position: 'relative' as const }}>
-                <div style={{ height: '100%', borderRadius: 3, width: getSkillWidth(sk.level), background: `linear-gradient(90deg, ${blue}, ${cyan})` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'certifications': return <CertificationsSection data={data} color={blue} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={blue} lang={language} size={sz} />;
-      case 'projects': return (
-        <div>
-          {data.projects.map((proj) => (
-            <div key={proj.id} style={{ marginBottom: 10, padding: 10, border: `1px solid #E2E8F0`, borderRadius: 6, position: 'relative' as const }}>
-              <div style={{ position: 'absolute' as const, top: 0, [isRtl(language) ? 'right' : 'left']: 0, width: 3, height: '100%', backgroundColor: cyan, borderRadius: isRtl(language) ? '0 6px 6px 0' : '6px 0 0 6px' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingInlineStart: 8 }}>
-                <span style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a' }}>{proj.name}</span>
-                {proj.url && <ExternalLink size={10} style={{ color: cyan }} />}
-              </div>
-              {proj.description && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 2, paddingInlineStart: 8 }}>{proj.description}</div>}
-              {proj.technologies.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4, marginTop: 4, paddingInlineStart: 8 }}>
-                  {proj.technologies.map((t) => (
-                    <span key={t} style={{ fontSize: sz - 2, padding: '2px 8px', borderRadius: 3, backgroundColor: '#EFF6FF', color: blue, fontFamily: '"Courier New", monospace' }}>{t}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      default: return null;
-    }
-  };
 
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, position: 'relative' as const }}>
-      {/* Subtle grid background */}
-      <div style={{
-        position: 'absolute' as const,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundImage: `linear-gradient(${blue}06 1px, transparent 1px), linear-gradient(90deg, ${blue}06 1px, transparent 1px)`,
-        backgroundSize: '20px 20px',
-        pointerEvents: 'none' as const,
-      }} />
-
-      {/* Header */}
-      <div style={{ padding: '28px 32px 18px', position: 'relative' as const, zIndex: 1 }}>
-        <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Code-style dark header */}
+      <div className="bg-gray-900 dark:bg-black px-4 sm:px-6 pt-4 sm:pt-5 pb-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          <span className="text-[10px] text-gray-500 ms-2 font-mono">resume.tsx</span>
+        </div>
+        <div className="font-mono text-xs sm:text-sm">
+          <span className="text-gray-500">{'// '}</span><span className="text-gray-400">{language === 'ar' ? 'السيرة الذاتية' : 'Resume'}</span>
+        </div>
+        <div className="mt-2 flex items-center gap-3 sm:gap-4">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 78, height: 78, borderRadius: 8, objectFit: 'cover', border: `2px solid ${blue}`, boxShadow: `0 0 0 3px ${cyan}30` }} />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border shrink-0" style={{ borderColor: primaryColor + '50' }}>
+              <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: sz + 14, fontWeight: 800, color: '#0F172A', marginBottom: 2, letterSpacing: 0.5 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 2, fontWeight: 500, color: blue, marginBottom: 8, fontFamily: '"Courier New", monospace' }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <ContactItems info={p} color={blue} lang={language} size={sz - 1} />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-extrabold text-white font-mono">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm font-mono mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[10px] sm:text-xs text-gray-400 font-mono">
+              {p.email && <span>{p.email}</span>}
+              {p.phone && <span>{p.phone}</span>}
+              {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+              {p.github && <span className="flex items-center gap-1"><Github size={10} />{p.github}</span>}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Code-style divider */}
-      <div style={{ margin: '0 32px', display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ color: cyan, fontFamily: '"Courier New", monospace', fontSize: sz - 2 }}>{'//'}</span>
-        <div style={{ flex: 1, height: 1, backgroundColor: `${blue}20` }} />
-      </div>
-
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '16px 32px 8px', position: 'relative' as const, zIndex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: blue, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, fontFamily: '"Courier New", monospace' }}>
-            <span style={{ color: cyan }}>{'<'}</span>{language === 'ar' ? 'نبذة احترافية' : 'Summary'}<span style={{ color: cyan }}>{' />'}</span>
-          </div>
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-4 sm:px-6 pt-4">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white mb-2">
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ backgroundColor: primaryColor + '15', color: primaryColor }}>{'>'}</span>
+            {language === 'ar' ? 'نبذة احترافية' : 'Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5 font-mono">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 32px 32px', position: 'relative' as const, zIndex: 1 }}>
+      <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: blue, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontFamily: '"Courier New", monospace' }}>
-              <span style={{ color: cyan }}>{'<'}</span>{sectionLabel(type, language)}<span style={{ color: cyan }}>{' />'}</span>
-            </div>
-            {renderSection(type)}
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white mb-2">
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ backgroundColor: primaryColor + '15', color: primaryColor }}>{'>'}</span>
+              {sectionLabel(type, language)}
+            </h2>
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-1.5">
+                {data.skills.map((sk) => (
+                  <span key={sk.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono border" style={{ borderColor: primaryColor + '30', color: primaryColor, backgroundColor: primaryColor + '08' }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sk.level === 'expert' ? '#22c55e' : sk.level === 'advanced' ? primaryColor : '#94a3b8' }} />
+                    {sk.name}
+                  </span>
+                ))}
+              </div>
+            ) : renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -2104,101 +1300,63 @@ export function SoftwareTemplate({ data, primaryColor, fontFamily, fontSize, lan
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   17. NURSE TEMPLATE – Pink/rose, soft rounded, compassionate                */
-/*                                                                              */
+/*   17. NURSE TEMPLATE - "التمريض"                                            */
 /* ============================================================================ */
 
 export function NurseTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const pink = '#DB2777';
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={pink} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={pink} lang={language} size={sz} />;
-      case 'skills': return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-          {data.skills.map((sk) => (
-            <span key={sk.id} style={{
-              padding: '4px 12px',
-              borderRadius: 20,
-              fontSize: sz - 1,
-              fontWeight: 500,
-              backgroundColor: '#FDF2F8',
-              color: pink,
-              border: `1px solid ${pink}25`,
-            }}>
-              {sk.name}<span style={{ opacity: 0.5, marginInlineStart: 3 }}>· {SKILL_LEVEL_LABELS[language][sk.level]}</span>
-            </span>
-          ))}
-        </div>
-      );
-      case 'certifications': return (
-        <div>
-          {data.certifications.map((c) => (
-            <div key={c.id} style={{ marginBottom: 8, padding: '8px 12px', backgroundColor: '#FDF2F8', borderRadius: 10, borderLeft: `3px solid ${pink}` }}>
-              <div style={{ fontWeight: 600, fontSize: sz, color: '#1a1a1a' }}>{c.name}</div>
-              <div style={{ fontSize: sz - 1, color: '#888' }}>{c.issuer}{c.date ? ` · ${c.date}` : ''}</div>
-              {c.description && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 2 }}>{c.description}</div>}
-            </div>
-          ))}
-        </div>
-      );
-      case 'languages': return <LanguagesDots data={data} color={pink} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={pink} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
 
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Soft pink header */}
-      <div style={{ background: `linear-gradient(135deg, ${pink}, #EC4899)`, color: '#ffffff', padding: '28px 32px 22px', borderRadius: '0 0 20px 0', position: 'relative' as const }}>
-        <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Soft caring header */}
+      <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4" style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${primaryColor}05)` }}>
+        <div className="flex items-center gap-3 sm:gap-4">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.6)', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }} />
+            <div className="rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: primaryColor + '30' }}>
+              <div className="w-16 h-16 sm:w-20 sm:h-20">
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
             </div>
           )}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: sz + 14, fontWeight: 800, marginBottom: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 3, fontWeight: 400, opacity: 0.9, marginBottom: 10, letterSpacing: 0.5 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, opacity: 0.85 }}>
-              {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} /> {p.email}</span>}
-              {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} /> {p.phone}</span>}
-              {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} /> {p.website}</span>}
-              {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} /> {p.linkedin}</span>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Heart size={12} style={{ color: primaryColor }} />
+              <p className="text-xs sm:text-sm font-medium" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
             </div>
+            <div className="mt-2"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
           </div>
         </div>
-        {/* Heart-inspired divider */}
-        <div style={{ position: 'absolute' as const, bottom: -1, left: 32, right: 32, height: 2, borderRadius: 1, background: `linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.2), transparent)` }} />
       </div>
 
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '18px 32px 8px' }}>
-          <HeadingAccent title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={pink} size={sz} />
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-5 sm:px-6 pt-3">
+          <SectionCard>
+            <SectionHeader icon={<Heart size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} />
+            <div className="px-4 sm:px-5 pb-4 pt-2"><p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p></div>
+          </SectionCard>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: pink, marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${pink}20`, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', backgroundColor: pink, opacity: 0.3 }} />
-              {sectionLabel(type, language)}
+          <SectionCard key={type}>
+            <SectionHeader icon={
+              type === 'experience' ? <Briefcase size={12} style={{ color: primaryColor }} /> :
+              type === 'education' ? <GraduationCap size={12} style={{ color: primaryColor }} /> :
+              type === 'skills' ? <Heart size={12} style={{ color: primaryColor }} /> :
+              type === 'certifications' ? <Award size={12} style={{ color: primaryColor }} /> :
+              type === 'languages' ? <Globe2 size={12} style={{ color: primaryColor }} /> :
+              <FolderKanban size={12} style={{ color: primaryColor }} />
+            } title={sectionLabel(type, language)} />
+            <div className="px-4 sm:px-5 pb-4 pt-2">
+              {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+               type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+               renderSection(type, data, primaryColor, language)}
             </div>
-            {renderSection(type)}
-          </div>
+          </SectionCard>
         ))}
       </div>
     </div>
@@ -2206,239 +1364,139 @@ export function NurseTemplate({ data, primaryColor, fontFamily, fontSize, langua
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   18. HEALTHCARE TEMPLATE – Teal, medical cross, two-column                  */
-/*                                                                              */
+/*   18. HEALTHCARE TEMPLATE - "الرعاية الصحية"                                */
 /* ============================================================================ */
 
 export function HealthcareTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const teal = '#0D9488';
-
-  const leftCols = ['skills', 'languages'];
-  const rightCols = ['experience', 'education', 'certifications', 'projects'];
-  const leftItems = leftCols.filter((s) => sections.includes(s));
-  const rightItems = rightCols.filter((s) => sections.includes(s));
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return <ExperienceSection data={data} color={teal} lang={language} size={sz} />;
-      case 'education': return <EducationSection data={data} color={teal} lang={language} size={sz} />;
-      case 'skills': return (
-        <div>
-          {data.skills.map((sk) => (
-            <div key={sk.id} style={{ marginBottom: 5 }}>
-              <div style={{ fontSize: sz - 1, fontWeight: 500, marginBottom: 2 }}>{sk.name}</div>
-              <div style={{ height: 4, borderRadius: 2, backgroundColor: '#E2E8F0', overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 2, width: getSkillWidth(sk.level), backgroundColor: teal }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'certifications': return <CertificationsSection data={data} color={teal} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={teal} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={teal} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
 
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Header with medical cross accent */}
-      <div style={{ padding: '28px 32px 20px', borderBottom: `3px solid ${teal}`, position: 'relative' as const }}>
-        {/* Medical cross decoration */}
-        <div style={{ position: 'absolute' as const, top: 14, [isRtl(language) ? 'left' : 'right']: 32, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' as const }}>
-          <div style={{ position: 'absolute' as const, width: 14, height: 36, backgroundColor: `${teal}15`, borderRadius: 3 }} />
-          <div style={{ position: 'absolute' as const, width: 36, height: 14, backgroundColor: `${teal}15`, borderRadius: 3 }} />
-        </div>
-
-        <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Clinical header */}
+      <div className="text-white px-5 sm:px-6 py-4 sm:py-5" style={{ backgroundColor: primaryColor }}>
+        <div className="flex items-center gap-3 sm:gap-4">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 76, height: 76, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${teal}` }} />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-white/40 shrink-0">
+              <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: sz + 14, fontWeight: 800, color: '#1a1a1a', marginBottom: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 3, fontWeight: 500, color: teal, marginBottom: 8 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <ContactItems info={p} color={teal} lang={language} size={sz - 1} />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm opacity-90 mt-0.5">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
           </div>
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs opacity-85">
+          {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
+          {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
+          {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
         </div>
       </div>
 
-      {/* Summary */}
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 gap-px" style={{ backgroundColor: primaryColor + '20' }}>
+        {[
+          { icon: <Briefcase size={14} style={{ color: primaryColor }} />, value: data.experience.length, label: language === 'ar' ? 'خبرة' : 'Exp' },
+          { icon: <Award size={14} style={{ color: primaryColor }} />, value: data.certifications.length, label: language === 'ar' ? 'شهادة' : 'Certs' },
+          { icon: <Globe2 size={14} style={{ color: primaryColor }} />, value: data.languages.length, label: language === 'ar' ? 'لغة' : 'Langs' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white dark:bg-gray-900 p-2.5 sm:p-3 flex items-center gap-2 justify-center">
+            {stat.icon}
+            <div>
+              <p className="text-sm sm:text-base font-bold">{stat.value}</p>
+              <p className="text-[9px] sm:text-[10px] text-gray-400">{stat.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {p.summary && (
-        <div style={{ padding: '16px 32px 8px' }}>
-          <HeadingUnderline title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={teal} size={sz} />
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const }}>{p.summary}</div>
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>
+            <Shield size={14} />{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Two-column layout for sections */}
-      <div style={{ padding: '8px 32px 32px', display: 'flex', gap: 24 }}>
-        {/* Left column – skills & languages */}
-        {leftItems.length > 0 && (
-          <div style={{ width: '35%' }}>
-            {leftItems.map((type) => (
-              <div key={type} style={{ marginTop: 14 }}>
-                <HeadingUnderline title={sectionLabel(type, language)} color={teal} size={sz} />
-                {renderSection(type)}
-              </div>
-            ))}
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+        {sections.map((type) => (
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>
+              {type === 'experience' ? <Briefcase size={14} /> : type === 'education' ? <GraduationCap size={14} /> : type === 'skills' ? <Zap size={14} /> : type === 'certifications' ? <Award size={14} /> : type === 'languages' ? <Globe2 size={14} /> : <FolderKanban size={14} />}
+              {sectionLabel(type, language)}
+            </h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
-        )}
-
-        {/* Right column – main content */}
-        <div style={{ flex: 1 }}>
-          {rightItems.map((type) => (
-            <div key={type} style={{ marginTop: 14 }}>
-              <HeadingUnderline title={sectionLabel(type, language)} color={teal} size={sz} />
-              {renderSection(type)}
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   19. MARKETING TEMPLATE – Orange, diagonal blocks, vibrant                  */
-/*                                                                              */
+/*   19. MARKETING TEMPLATE - "التسويق"                                        */
 /* ============================================================================ */
 
 export function MarketingTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const orange = '#EA580C';
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return (
-        <div>
-          {data.experience.map((exp) => (
-            <div key={exp.id} style={{ marginBottom: 12, position: 'relative' as const, padding: '10px 12px', backgroundColor: '#FFF7ED', borderRadius: 6, borderLeft: `4px solid ${orange}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a' }}>{exp.jobTitle}</div>
-                  <div style={{ fontSize: sz, color: orange, fontWeight: 500 }}>{exp.company}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: '#999', whiteSpace: 'nowrap' as const }}>
-                  {formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
-                </div>
-              </div>
-              {exp.description && (
-                <div style={{ fontSize: sz - 1, color: '#666', marginTop: 3, whiteSpace: 'pre-line' as const }}>{exp.description}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      case 'education': return <EducationSection data={data} color={orange} lang={language} size={sz} />;
-      case 'skills': return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-          {data.skills.map((sk) => (
-            <span key={sk.id} style={{
-              padding: '4px 12px',
-              borderRadius: 6,
-              fontSize: sz - 1,
-              fontWeight: 600,
-              backgroundColor: orange,
-              color: '#ffffff',
-            }}>
-              {sk.name}
-            </span>
-          ))}
-        </div>
-      );
-      case 'certifications': return <CertificationsSection data={data} color={orange} lang={language} size={sz} />;
-      case 'languages': return <LanguagesDots data={data} color={orange} lang={language} size={sz} />;
-      case 'projects': return (
-        <div>
-          {data.projects.map((proj) => (
-            <div key={proj.id} style={{ marginBottom: 10, padding: 10, backgroundColor: '#FFF7ED', borderRadius: 8, position: 'relative' as const }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, backgroundColor: orange, transform: 'rotate(45deg)' }} />
-                <span style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a' }}>{proj.name}</span>
-                {proj.url && <ExternalLink size={10} style={{ color: orange }} />}
-              </div>
-              {proj.description && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 2, marginInlineStart: 16 }}>{proj.description}</div>}
-              {proj.technologies.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4, marginTop: 4, marginInlineStart: 16 }}>
-                  {proj.technologies.map((t) => (
-                    <span key={t} style={{ fontSize: sz - 2, padding: '2px 8px', borderRadius: 4, backgroundColor: '#FFEDD5', color: '#C2410C' }}>{t}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      default: return null;
-    }
-  };
 
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, position: 'relative' as const, overflow: 'hidden' as const }}>
-      {/* Diagonal color block in top-right */}
-      <div style={{
-        position: 'absolute' as const,
-        top: 0,
-        [isRtl(language) ? 'left' : 'right']: 0,
-        width: '55%',
-        height: 140,
-        backgroundColor: orange,
-        clipPath: isRtl(language)
-          ? 'polygon(0 0, 100% 0, 100% 100%, 80px 100%)'
-          : 'polygon(30% 0, 100% 0, 100% 100%, 0% 100%)',
-      }} />
-
-      {/* Header */}
-      <div style={{ padding: '28px 32px 18px', position: 'relative' as const, zIndex: 1, display: 'flex', gap: 18, alignItems: 'center' }}>
-        {p.photo && (
-          <div style={{ flexShrink: 0 }}>
-            <img src={p.photo} alt="" style={{ width: 78, height: 78, borderRadius: 10, objectFit: 'cover', border: `3px solid ${orange}`, boxShadow: '0 3px 10px rgba(0,0,0,0.15)' }} />
+    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Bold vibrant header */}
+      <div className="relative px-5 sm:px-6 pt-6 sm:pt-8 pb-5 text-white overflow-hidden" style={{ backgroundColor: primaryColor }}>
+        {/* Decorative shapes */}
+        <div className="absolute -top-10 -end-10 w-32 h-32 rounded-full opacity-10 bg-white" />
+        <div className="absolute -bottom-8 -start-8 w-24 h-24 rounded-full opacity-10 bg-white" />
+        <div className="relative">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {p.photo && (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-white/30 shrink-0 rotate-3">
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+              <p className="text-xs sm:text-sm font-semibold mt-0.5 opacity-90">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            </div>
           </div>
-        )}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: sz + 16, fontWeight: 800, color: '#1a1a1a', marginBottom: 2, position: 'relative' as const }}>
-            <span style={{ position: 'relative' as const, zIndex: 2 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</span>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
+            {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
+            {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
+            {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
           </div>
-          <div style={{ fontSize: sz + 3, fontWeight: 600, color: orange, marginBottom: 8, textTransform: 'uppercase' as const, letterSpacing: 1 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-          <ContactItems info={p} color={orange} lang={language} size={sz - 1} />
         </div>
       </div>
 
-      {/* Vibrant section divider */}
-      <div style={{ margin: '0 32px 4px', height: 4, borderRadius: 2, background: `linear-gradient(90deg, ${orange}, ${orange}50, transparent)` }} />
-
-      {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '14px 32px 8px' }}>
-          <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: orange, marginBottom: 6, padding: '4px 12px', backgroundColor: '#FFF7ED', borderRadius: 4, display: 'inline-block' }}>
-            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-          </div>
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const, marginTop: 6 }}>{p.summary}</div>
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="text-sm sm:text-base font-extrabold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>
+            <TrendingUp size={14} className="inline me-1" />{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 32px 32px' }}>
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
         {sections.map((type) => (
-          <div key={type} style={{ marginTop: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: orange, marginBottom: 8, padding: '4px 12px', backgroundColor: '#FFF7ED', borderRadius: 4, display: 'inline-block' }}>
+          <div key={type} className="rounded-xl p-3 sm:p-4 border-2" style={{ borderColor: primaryColor + '15' }}>
+            <h2 className="text-sm sm:text-base font-extrabold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>
               {sectionLabel(type, language)}
-            </div>
-            {renderSection(type)}
+            </h2>
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-1.5">
+                {data.skills.map((sk) => (
+                  <span key={sk.id} className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc)` }}>
+                    {sk.name}
+                  </span>
+                ))}
+              </div>
+            ) : renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -2447,690 +1505,386 @@ export function MarketingTemplate({ data, primaryColor, fontFamily, fontSize, la
 }
 
 /* ============================================================================ */
-/*                                                                              */
-/*   20. FINANCE TEMPLATE – Dark navy, gold lines, serif, conservative          */
-/*                                                                              */
+/*   20. FINANCE TEMPLATE - "المالية"                                          */
 /* ============================================================================ */
 
 export function FinanceTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
+  const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const navy = '#1E293B';
-  const goldAccent = '#B45309';
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return (
-        <div>
-          {data.experience.map((exp) => (
-            <div key={exp.id} style={{ marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid #E2E8F0` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a', fontFamily: 'Georgia, serif' }}>{exp.jobTitle}</div>
-                  <div style={{ fontSize: sz, color: navy, fontWeight: 500 }}>{exp.company}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: '#999', whiteSpace: 'nowrap' as const, fontFamily: 'Georgia, serif' }}>
-                  {formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
-                </div>
-              </div>
-              {exp.description && (
-                <div style={{ fontSize: sz - 1, color: '#666', marginTop: 3, whiteSpace: 'pre-line' as const }}>{exp.description}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-      case 'education': return (
-        <div>
-          {data.education.map((edu) => (
-            <div key={edu.id} style={{ marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid #E2E8F0` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a', fontFamily: 'Georgia, serif' }}>{edu.major}</div>
-                  <div style={{ fontSize: sz, color: '#555' }}>{edu.institution}{edu.degree ? ` — ${DEGREE_LABELS[language][edu.degree as DegreeType] || edu.degree}` : ''}</div>
-                </div>
-                <div style={{ fontSize: sz - 1, color: '#999', whiteSpace: 'nowrap' as const }}>{edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-      case 'skills': return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-          {data.skills.map((sk) => (
-            <span key={sk.id} style={{
-              padding: '3px 10px',
-              fontSize: sz - 1,
-              fontWeight: 500,
-              color: navy,
-              border: `1px solid ${navy}30`,
-              borderRadius: 2,
-              backgroundColor: '#F8FAFC',
-            }}>
-              {sk.name}<span style={{ color: '#999', marginInlineStart: 3 }}>· {SKILL_LEVEL_LABELS[language][sk.level]}</span>
-            </span>
-          ))}
-        </div>
-      );
-      case 'certifications': return <CertificationsSection data={data} color={navy} lang={language} size={sz} />;
-      case 'languages': return <LanguagesSection data={data} color={navy} lang={language} size={sz} />;
-      case 'projects': return <ProjectsSection data={data} color={navy} lang={language} size={sz} />;
-      default: return null;
-    }
-  };
 
   return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d }}>
-      {/* Conservative dark navy header */}
-      <div style={{ backgroundColor: navy, color: '#ffffff', padding: '30px 36px 24px', position: 'relative' as const }}>
-        {/* Thin gold accent line at top */}
-        <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, height: 3, backgroundColor: goldAccent }} />
-
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+    <div className="w-full max-w-lg mx-auto bg-[#0c1929] text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Conservative prestigious header */}
+      <div className="px-5 sm:px-6 pt-6 sm:pt-8 pb-4 border-b-2" style={{ borderColor: primaryColor + '40' }}>
+        <div className="flex items-center gap-3 sm:gap-4">
           {p.photo && (
-            <div style={{ flexShrink: 0 }}>
-              <img src={p.photo} alt="" style={{ width: 76, height: 76, borderRadius: 4, objectFit: 'cover', border: `2px solid ${goldAccent}` }} />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded overflow-hidden shrink-0" style={{ border: `2px solid ${primaryColor}50` }}>
+              <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: sz + 16, fontWeight: 800, fontFamily: 'Georgia, serif', letterSpacing: 1, marginBottom: 3 }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</div>
-            <div style={{ fontSize: sz + 2, fontWeight: 300, opacity: 0.9, letterSpacing: 1.5, textTransform: 'uppercase' as const, marginBottom: 10 }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px 16px', fontSize: sz - 1, opacity: 0.8 }}>
-              {p.email && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={10} /> {p.email}</span>}
-              {p.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={10} /> {p.phone}</span>}
-              {(p.city || p.country) && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10} /> {p.website}</span>}
-              {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Linkedin size={10} /> {p.linkedin}</span>}
-              {p.github && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Github size={10} /> {p.github}</span>}
-            </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm font-medium mt-0.5 tracking-wider uppercase" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
           </div>
         </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
+          {p.email && <span>{p.email}</span>}
+          {p.phone && <span>{p.phone}</span>}
+          {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+          {p.linkedin && <span>{p.linkedin}</span>}
+        </div>
+      </div>
 
-        {/* Gold accent line at bottom */}
-        <div style={{ position: 'absolute' as const, bottom: 0, left: 36, right: 36, height: 1, backgroundColor: `${goldAccent}40` }} />
+      {p.summary && (
+        <div className="px-5 sm:px-6 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>
+            <BarChart3 size={14} className="inline me-1" />{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line">{p.summary}</p>
+        </div>
+      )}
+
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-3">
+        {sections.map((type) => (
+          <div key={type} className="rounded-lg p-3 sm:p-4 border" style={{ borderColor: primaryColor + '20', backgroundColor: 'rgba(255,255,255,0.03)' }}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: primaryColor }}>
+              {type === 'experience' ? <Briefcase size={12} /> : type === 'education' ? <GraduationCap size={12} /> : type === 'skills' ? <Target size={12} /> : type === 'certifications' ? <Award size={12} /> : type === 'languages' ? <Globe2 size={12} /> : <FolderKanban size={12} />}
+              {sectionLabel(type, language)}
+            </h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================================ */
+/*   21. AAFIATAK PRO TEMPLATE - "عافيتك برو"                                  */
+/* ============================================================================ */
+
+export function AafiatakProTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
+  const isR = isRtl(language);
+  const sections = getVisibleSections(data.sections);
+  const p = data.personalInfo;
+  const yearsExp = computeYears(data.experience);
+  const completedJobs = data.experience.length;
+  const skillCount = data.skills.length;
+
+  const SKILL_PERCENT: Record<SkillLevel, number> = { beginner: 25, intermediate: 50, advanced: 75, expert: 100 };
+
+  function skillBarColor(level: SkillLevel, color: string) {
+    if (level === 'expert') return color;
+    if (level === 'advanced') return color + 'cc';
+    if (level === 'intermediate') return color + '99';
+    return '#94a3b8';
+  }
+
+  function skillBadgeStyle(level: SkillLevel, color: string) {
+    if (level === 'expert') return { bg: color + '15', text: color };
+    if (level === 'advanced') return { bg: color + '10', text: color + 'cc' };
+    if (level === 'intermediate') return { bg: '#e0f2fe', text: '#0284c7' };
+    return { bg: '#f1f5f9', text: '#64748b' };
+  }
+
+  function langDotColor(level: LanguageLevel, color: string): { filled: string; empty: string } {
+    if (level === 'native' || level === 'fluent') return { filled: color, empty: color + '20' };
+    if (level === 'advanced') return { filled: color + 'cc', empty: color + '15' };
+    if (level === 'intermediate') return { filled: '#38bdf8', empty: '#38bdf820' };
+    return { filled: '#94a3b8', empty: '#94a3b820' };
+  }
+
+  function langBadgeStyle(level: LanguageLevel, color: string): { bg: string; text: string } {
+    if (level === 'native') return { bg: color + '15', text: color };
+    if (level === 'fluent') return { bg: '#d1fae5', text: '#059669' };
+    if (level === 'advanced') return { bg: color + '10', text: color + 'cc' };
+    if (level === 'intermediate') return { bg: '#fef3c7', text: '#d97706' };
+    return { bg: '#f1f5f9', text: '#64748b' };
+  }
+
+  const skillLabels = language === 'ar' ? { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم', expert: 'خبير' } : { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced', expert: 'Expert' };
+  const langLabels = language === 'ar' ? { native: 'لغة أم', fluent: 'فصيح', advanced: 'متقدم', intermediate: 'متوسط', basic: 'أساسي' } : { native: 'Native', fluent: 'Fluent', advanced: 'Advanced', intermediate: 'Intermediate', basic: 'Basic' };
+  const degreeLabels = language === 'ar' ? { high_school: 'ثانوية', diploma: 'دبلوم', bachelor: 'بكالوريوس', master: 'ماجستير', phd: 'دكتوراه', other: 'أخرى' } : { high_school: 'High School', diploma: 'Diploma', bachelor: 'Bachelor', master: 'Master', phd: 'PhD', other: 'Other' };
+
+  const cardClass = "rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm";
+
+  return (
+    <div className="w-full max-w-lg mx-auto space-y-3 sm:space-y-4 pb-6" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Profile Header */}
+      <div className={cardClass}>
+        <div className="relative h-20 sm:h-28" style={{ background: `linear-gradient(135deg, ${primaryColor}30, ${primaryColor}15, transparent)` }}>
+          <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at top left, ${primaryColor}20, transparent 70%)` }} />
+        </div>
+        <div className="relative px-4 sm:px-5 pb-4 sm:pb-5 -mt-12 sm:-mt-14">
+          {/* Avatar */}
+          <div className="flex flex-col items-center text-center">
+            <div className="relative mb-2 sm:mb-3">
+              <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}80, ${primaryColor}40)` }}>
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-3 sm:border-4 border-white dark:border-gray-900 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-800">
+                  {p.photo ? (
+                    <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xl sm:text-2xl font-bold" style={{ color: primaryColor }}>
+                      {p.fullName ? p.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) : '?'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Name + Title */}
+          <div className="text-center mb-2 sm:mb-3">
+            <h1 className="text-lg sm:text-xl font-bold flex items-center justify-center gap-1.5">
+              {p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}
+            </h1>
+            {p.jobTitle && <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: primaryColor }}>{p.jobTitle}</p>}
+          </div>
+
+          {/* Location + Experience */}
+          <div className="flex items-center justify-center gap-3 sm:gap-4 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">
+            {(p.city || p.country) && (
+              <span className="flex items-center gap-1"><MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: primaryColor + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>
+            )}
+            {yearsExp > 0 && (
+              <span className="flex items-center gap-1"><Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: primaryColor + '80' }} />{yearsExp} {language === 'ar' ? 'سنة خبرة' : 'years exp'}</span>
+            )}
+          </div>
+
+          {/* Quick badges */}
+          <div className="flex flex-wrap justify-center gap-1 sm:gap-1.5">
+            {completedJobs > 0 && (
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{completedJobs} {language === 'ar' ? 'خبرة' : 'exp'}
+              </span>
+            )}
+            {skillCount > 0 && (
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{skillCount} {language === 'ar' ? 'مهارة' : 'skills'}
+              </span>
+            )}
+            {data.languages.length > 0 && (
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <Globe2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{data.languages.length} {language === 'ar' ? 'لغة' : 'lang'}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        {[
+          { icon: <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />, value: completedJobs, label: language === 'ar' ? 'خبرة عملية' : 'Work Exp', bg: 'bg-emerald-500/10' },
+          { icon: <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />, value: skillCount, label: language === 'ar' ? 'مهارة' : 'Skills', bg: 'bg-amber-500/10' },
+          { icon: <Clock className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: primaryColor }} />, value: yearsExp, label: language === 'ar' ? 'سنة خبرة' : 'Years Exp', bg: '', customBg: primaryColor + '10' },
+          { icon: <Award className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-violet-400" />, value: data.certifications.length, label: language === 'ar' ? 'شهادة' : 'Certs', bg: 'bg-violet-500/10' },
+        ].map((stat, i) => (
+          <div key={i} className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-3 sm:p-4 shadow-sm">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`${stat.bg} w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0`} style={stat.customBg ? { backgroundColor: stat.customBg } : undefined}>
+                {stat.icon}
+              </div>
+              <div>
+                <p className="text-base sm:text-xl font-bold">{stat.value}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Summary */}
       {p.summary && (
-        <div style={{ padding: '20px 36px 8px' }}>
-          <div style={{ fontWeight: 700, fontSize: sz + 3, fontFamily: 'Georgia, serif', textTransform: 'uppercase' as const, letterSpacing: 1, color: navy, marginBottom: 6, paddingBottom: 4, borderBottom: `1px solid ${goldAccent}30`, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ display: 'inline-block', width: 20, height: 1, backgroundColor: goldAccent }} />
-            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+        <div className={cardClass}>
+          <SectionHeader icon={<User size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'نبذة مهنية' : 'Professional Summary'} />
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
           </div>
-          <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const, lineHeight: 1.6 }}>{p.summary}</div>
         </div>
       )}
 
-      {/* Sections */}
-      <div style={{ padding: '8px 36px 32px' }}>
-        {sections.map((type) => (
-          <div key={type} style={{ marginTop: 16 }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 3, fontFamily: 'Georgia, serif', textTransform: 'uppercase' as const, letterSpacing: 1, color: navy, marginBottom: 8, paddingBottom: 4, borderBottom: `1px solid ${goldAccent}30`, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ display: 'inline-block', width: 20, height: 1, backgroundColor: goldAccent }} />
-              {sectionLabel(type, language)}
-            </div>
-            {renderSection(type)}
+      {/* Skills */}
+      {data.skills.length > 0 && (
+        <div className={cardClass}>
+          <SectionHeader icon={<Sparkles size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'المهارات' : 'Skills'} />
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
+            {data.skills.map((sk) => {
+              const badgeStyle = skillBadgeStyle(sk.level, primaryColor);
+              return (
+                <div key={sk.id} className="space-y-1 sm:space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-medium">{sk.name}</span>
+                    <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}>{skillLabels[sk.level]}</span>
+                  </div>
+                  <div className="h-1.5 sm:h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ backgroundColor: skillBarColor(sk.level, primaryColor), width: `${SKILL_PERCENT[sk.level]}%` }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================================ */
-/*                                                                              */
-/*   Template Selector Function                                                 */
-/*                                                                              */
-/* ============================================================================ */
-
-/* ============================================================================ */
-/*                                                                              */
-/*   AAFIATAK PRO TEMPLATE – Gradient banner, timeline, progress bars, dots     */
-/*                                                                              */
-/* ============================================================================ */
-
-/** Helper: compute years of experience from experience entries */
-function computeYears(experience: ResumeData['experience']): number {
-  if (!experience.length) return 0;
-  let totalMonths = 0;
-  experience.forEach((exp) => {
-    const start = new Date(exp.startDate + '-01');
-    const end = exp.current ? new Date() : new Date(exp.endDate + '-01');
-    if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-      totalMonths += (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-    }
-  });
-  return Math.max(1, Math.round(totalMonths / 12));
-}
-
-/** Skill level color mapping for AafiatakPro */
-function aafiSkillColor(level: SkillLevel, primary: string): { bar: string; badge: string; badgeText: string } {
-  switch (level) {
-    case 'beginner': return { bar: '#94a3b8', badge: '#f1f5f9', badgeText: '#64748b' };
-    case 'intermediate': return { bar: '#38bdf8', badge: '#e0f2fe', badgeText: '#0284c7' };
-    case 'advanced': return { bar: '#0ea5e9', badge: '#e0f2fe', badgeText: '#0284c7' };
-    case 'expert': return { bar: primary, badge: primary + '18', badgeText: primary };
-    default: return { bar: '#94a3b8', badge: '#f1f5f9', badgeText: '#64748b' };
-  }
-}
-
-/** Language level color mapping for AafiatakPro */
-function aafiLangColor(level: LanguageLevel): { dot: string; badge: string; badgeText: string } {
-  switch (level) {
-    case 'native': return { dot: '#0ea5e9', badge: '#e0f2fe', badgeText: '#0284c7' };
-    case 'fluent': return { dot: '#10b981', badge: '#d1fae5', badgeText: '#059669' };
-    case 'advanced': return { dot: '#38bdf8', badge: '#e0f2fe', badgeText: '#0284c7' };
-    case 'intermediate': return { dot: '#f59e0b', badge: '#fef3c7', badgeText: '#d97706' };
-    case 'basic': return { dot: '#94a3b8', badge: '#f1f5f9', badgeText: '#64748b' };
-    default: return { dot: '#94a3b8', badge: '#f1f5f9', badgeText: '#64748b' };
-  }
-}
-
-export function AafiatakProTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
-  const ff = resolveFont(fontFamily);
-  const sz = fontSizeBase(fontSize);
-  const d = dir(language);
-  const sections = getVisibleSections(data.sections);
-  const p = data.personalInfo;
-  const isR = isRtl(language);
-
-  // Gradient colors
-  const gradFrom = primaryColor;
-  const gradVia = '#0ea5e9';
-  const gradTo = '#14b8a6';
-
-  // Stats
-  const yearsExp = computeYears(data.experience);
-  const completedJobs = data.experience.filter((e) => !e.current).length || data.experience.length;
-
-  // Section header render helper (not a component, just a function)
-  const renderSectionHeader = (icon: React.ReactNode, title: string) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${primaryColor}15` }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, backgroundColor: primaryColor + '12', color: primaryColor, flexShrink: 0 }}>
-        {icon}
-      </div>
-      <div style={{ fontWeight: 700, fontSize: sz + 2, color: '#1a1a1a', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{title}</div>
-    </div>
-  );
-
-  // GlassCard render helper (not a component, just a function)
-  const renderGlassCard = (children: React.ReactNode, style?: React.CSSProperties) => (
-    <div style={{
-      backgroundColor: '#ffffff',
-      borderRadius: 16,
-      padding: '16px 18px',
-      marginBottom: 14,
-      border: '1px solid #f0f0f0',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-      ...style,
-    }}>
-      {children}
-    </div>
-  );
-
-  // ---- Render different section types ----
-  const renderAafiatakSkills = () => {
-    if (!data.skills.length) return null;
-    return renderGlassCard(
-      <>
-        {renderSectionHeader(<Wrench size={14} />, language === 'ar' ? 'المهارات' : 'Skills')}
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
-          {data.skills.map((sk) => {
-            const colors = aafiSkillColor(sk.level, primaryColor);
-            return (
-              <div key={sk.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: sz, fontWeight: 600, color: '#1a1a1a' }}>{sk.name}</span>
-                  <span style={{
-                    fontSize: sz - 3,
-                    fontWeight: 600,
-                    padding: '2px 8px',
-                    borderRadius: 10,
-                    backgroundColor: colors.badge,
-                    color: colors.badgeText,
-                  }}>
-                    {SKILL_LEVEL_LABELS[language][sk.level]}
-                  </span>
-                </div>
-                <div style={{ height: 6, borderRadius: 4, backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    borderRadius: 4,
-                    width: getSkillWidth(sk.level),
-                    background: `linear-gradient(90deg, ${colors.bar}, ${colors.bar}cc)`,
-                    transition: 'width 0.5s ease',
-                  }} />
-                </div>
-              </div>
-            );
-          })}
         </div>
-      </>
-    );
-  };
+      )}
 
-  const renderAafiatakExperience = () => {
-    if (!data.experience.length) return null;
-    return renderGlassCard(
-      <>
-        {renderSectionHeader(<Briefcase size={14} />, language === 'ar' ? 'الخبرات العملية' : 'Work Experience')}
-        <div style={{ position: 'relative' as const, paddingRight: isR ? 0 : 24, paddingLeft: isR ? 24 : 0 }}>
-          {/* Timeline line */}
-          <div style={{
-            position: 'absolute' as const,
-            top: 6,
-            bottom: 6,
-            width: 2,
-            backgroundColor: primaryColor + '20',
-            ...(isR ? { right: 8 } : { left: 8 }),
-          }} />
-          {data.experience.map((exp, idx) => (
-            <div key={exp.id} style={{ position: 'relative' as const, marginBottom: idx < data.experience.length - 1 ? 16 : 0 }}>
-              {/* Timeline dot */}
-              <div style={{
-                position: 'absolute' as const,
-                top: 6,
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                border: `2px solid ${idx === 0 ? primaryColor : primaryColor + '40'}`,
-                backgroundColor: idx === 0 ? primaryColor : '#ffffff',
-                ...(isR ? { right: 3 } : { left: 3 }),
-                zIndex: 1,
-              }} />
-              {/* Content */}
-              <div style={{ ...(isR ? { paddingRight: 28 } : { paddingLeft: 28 }) }}>
-                <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a', marginBottom: 2 }}>{exp.jobTitle}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                  <Building2 size={10} style={{ color: primaryColor, flexShrink: 0 }} />
-                  <span style={{ fontSize: sz - 1, color: '#555', fontWeight: 500 }}>{exp.company}</span>
+      {/* Experience */}
+      {data.experience.length > 0 && (
+        <div className={cardClass}>
+          <SectionHeader icon={<Briefcase size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'الخبرات العملية' : 'Work Experience'} />
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
+            <div className="relative">
+              <div className="absolute top-2 bottom-2 w-[2px]" style={{ backgroundColor: primaryColor + '20', ...(isR ? { right: '7px' } : { left: '7px' }) }} />
+              <div className="space-y-4 sm:space-y-5">
+                {data.experience.map((exp, index) => (
+                  <div key={exp.id} className="relative" style={{ ...(isR ? { paddingRight: 24 } : { paddingLeft: 24 }) }}>
+                    <div className="absolute top-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-[3px] border-white dark:border-gray-900" style={{ backgroundColor: index === 0 ? primaryColor : primaryColor + '40', ...(isR ? { right: 0 } : { left: 0 }), zIndex: 1 }} />
+                    <div className="space-y-1 sm:space-y-1.5">
+                      {exp.jobTitle && <h4 className="text-xs sm:text-sm font-semibold">{exp.jobTitle}</h4>}
+                      {exp.company && (
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
+                          <Building2 className="w-3 h-3" style={{ color: primaryColor + '70' }} /><span>{exp.company}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-gray-400">
+                        <Calendar className="w-3 h-3" /><span>{formatDateRange(exp.startDate, exp.endDate, exp.current, language)}</span>
+                      </div>
+                      {exp.description && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-1 sm:mt-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2 whitespace-pre-line">{exp.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Education */}
+      {data.education.length > 0 && (
+        <div className={cardClass}>
+          <SectionHeader icon={<GraduationCap size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'المؤهلات التعليمية' : 'Education'} />
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
+            {data.education.map((edu) => (
+              <div key={edu.id} className="pb-2.5 sm:pb-3 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-semibold">{edu.major}</h4>
+                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">{edu.institution}</p>
+                    {edu.degree && (
+                      <span className="inline-block text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-medium mt-1" style={{ backgroundColor: primaryColor + '10', color: primaryColor }}>
+                        {degreeLabels[edu.degree as keyof typeof degreeLabels] || edu.degree}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] text-gray-400 shrink-0">{edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                  <Calendar size={10} style={{ color: '#999', flexShrink: 0 }} />
-                  <span style={{ fontSize: sz - 2, color: '#999' }}>
-                    {formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
-                  </span>
+                {edu.description && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">{edu.description}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Certifications */}
+      {data.certifications.length > 0 && (
+        <div className={cardClass}>
+          <SectionHeader icon={<Award size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'الشهادات والدورات' : 'Certifications'} />
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              {data.certifications.map((cert) => (
+                <div key={cert.id} className="rounded-lg sm:rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3 sm:p-3.5 space-y-1.5 sm:space-y-2">
+                  <h4 className="text-xs sm:text-sm font-semibold leading-tight">{cert.name}</h4>
+                  {cert.issuer && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">{cert.issuer}</p>}
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold bg-amber-500/10 text-amber-600">{language === 'ar' ? 'شهادة' : 'Cert'}</span>
+                    {cert.date && <span className="text-[9px] sm:text-[10px] text-gray-400">{cert.date}</span>}
+                  </div>
                 </div>
-                {exp.description && (
-                  <div style={{
-                    fontSize: sz - 1,
-                    color: '#666',
-                    whiteSpace: 'pre-line' as const,
-                    backgroundColor: '#f8fafc',
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    lineHeight: 1.6,
-                  }}>
-                    {exp.description}
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Languages */}
+      {data.languages.length > 0 && (
+        <div className={cardClass}>
+          <SectionHeader icon={<Globe2 size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'اللغات' : 'Languages'} />
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
+            {data.languages.map((lang) => {
+              const dots = getLanguageDots(lang.level);
+              const dotColors = langDotColor(lang.level, primaryColor);
+              const badge = langBadgeStyle(lang.level, primaryColor);
+              return (
+                <div key={lang.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="text-xs sm:text-sm font-medium">{lang.name}</span>
+                    <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: badge.bg, color: badge.text }}>{langLabels[lang.level]}</span>
+                  </div>
+                  <div className="flex gap-0.5 sm:gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: i < dots ? dotColors.filled : dotColors.empty }} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Projects */}
+      {data.projects.length > 0 && (
+        <div className={cardClass}>
+          <SectionHeader icon={<FolderKanban size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'المشاريع' : 'Projects'} />
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2 sm:space-y-3">
+            {data.projects.map((proj) => (
+              <div key={proj.id} className="rounded-lg sm:rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3 sm:p-3.5">
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-xs sm:text-sm font-semibold">{proj.name}</h4>
+                  {proj.url && <ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400 shrink-0" />}
+                </div>
+                {proj.description && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 sm:mt-1.5 leading-relaxed">{proj.description}</p>}
+                {proj.technologies.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5 sm:mt-2">
+                    {proj.technologies.map((tech) => (
+                      <span key={tech} className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: primaryColor + '10', color: primaryColor + 'cc' }}>{tech}</span>
+                    ))}
                   </div>
                 )}
               </div>
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  };
-
-  const renderAafiatakEducation = () => {
-    if (!data.education.length) return null;
-    return renderGlassCard(
-      <>
-        {renderSectionHeader(<GraduationCap size={14} />, language === 'ar' ? 'المؤهلات التعليمية' : 'Education')}
-        {data.education.map((edu) => (
-          <div key={edu.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid #f5f5f5' }}>
-            <div style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a', marginBottom: 2 }}>{edu.major}</div>
-            <div style={{ fontSize: sz - 1, color: '#555', marginBottom: 2 }}>
-              {edu.institution}{edu.degree ? ` — ${DEGREE_LABELS[language][edu.degree as DegreeType] || edu.degree}` : ''}
-            </div>
-            <div style={{ fontSize: sz - 2, color: '#999' }}>
-              {edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}
-            </div>
-            {edu.description && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 3 }}>{edu.description}</div>}
+            ))}
           </div>
-        ))}
-      </>
-    );
-  };
-
-  const renderAafiatakCertifications = () => {
-    if (!data.certifications.length) return null;
-
-    const certTypeColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-      certificate: { bg: '#fef3c7', text: '#d97706', icon: <Award size={12} /> },
-      course: { bg: '#dbeafe', text: '#2563eb', icon: <BookOpen size={12} /> },
-      license: { bg: '#d1fae5', text: '#059669', icon: <Shield size={12} /> },
-      training: { bg: '#ede9fe', text: '#7c3aed', icon: <Trophy size={12} /> },
-    };
-    const defaultCert = certTypeColors.certificate;
-
-    return renderGlassCard(
-      <>
-        {renderSectionHeader(<Award size={14} />, language === 'ar' ? 'الشهادات' : 'Certifications')}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {data.certifications.map((c) => {
-            const typeStyle = defaultCert;
-            return (
-              <div key={c.id} style={{
-                padding: '8px 10px',
-                borderRadius: 10,
-                border: '1px solid #f0f0f0',
-                backgroundColor: '#fafafa',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 6, backgroundColor: typeStyle.bg, color: typeStyle.text, flexShrink: 0 }}>
-                    {typeStyle.icon}
-                  </div>
-                  <span style={{ fontWeight: 600, fontSize: sz - 1, color: '#1a1a1a', lineHeight: 1.3 }}>{c.name}</span>
-                </div>
-                {c.issuer && <div style={{ fontSize: sz - 2, color: '#888', marginBottom: 2 }}>{c.issuer}</div>}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{
-                    fontSize: sz - 3,
-                    fontWeight: 600,
-                    padding: '1px 6px',
-                    borderRadius: 6,
-                    backgroundColor: typeStyle.bg,
-                    color: typeStyle.text,
-                  }}>
-                    {language === 'ar' ? 'شهادة' : 'Certificate'}
-                  </span>
-                  {c.date && <span style={{ fontSize: sz - 3, color: '#aaa' }}>{c.date}</span>}
-                </div>
-              </div>
-            );
-          })}
         </div>
-      </>
-    );
-  };
+      )}
 
-  const renderAafiatakLanguages = () => {
-    if (!data.languages.length) return null;
-    return renderGlassCard(
-      <>
-        {renderSectionHeader(<Globe2 size={14} />, language === 'ar' ? 'اللغات' : 'Languages')}
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-          {data.languages.map((l) => {
-            const filled = getLanguageDots(l.level);
-            const colors = aafiLangColor(l.level);
-            return (
-              <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: sz, fontWeight: 600, color: '#1a1a1a', minWidth: 65 }}>{l.name}</span>
-                <span style={{
-                  fontSize: sz - 3,
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  borderRadius: 10,
-                  backgroundColor: colors.badge,
-                  color: colors.badgeText,
-                }}>
-                  {LANGUAGE_LEVEL_LABELS[language][l.level]}
-                </span>
-                <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' as const }}>
-                  {[1, 2, 3, 4, 5].map((dot) => (
-                    <div key={dot} style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: dot <= filled ? colors.dot : '#e2e8f0',
-                      transition: 'background-color 0.2s',
-                    }} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </>
-    );
-  };
-
-  const renderAafiatakProjects = () => {
-    if (!data.projects.length) return null;
-    return renderGlassCard(
-      <>
-        {renderSectionHeader(<FolderKanban size={14} />, language === 'ar' ? 'المشاريع' : 'Projects')}
-        {data.projects.map((proj) => (
-          <div key={proj.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid #f5f5f5' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ fontWeight: 700, fontSize: sz + 1, color: '#1a1a1a' }}>{proj.name}</span>
-              {proj.url && <ExternalLink size={10} style={{ color: '#aaa' }} />}
-            </div>
-            {proj.description && <div style={{ fontSize: sz - 1, color: '#666', marginTop: 2 }}>{proj.description}</div>}
-            {proj.technologies.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginTop: 4 }}>
-                {proj.technologies.map((t) => (
-                  <span key={t} style={{ fontSize: sz - 2, padding: '1px 7px', borderRadius: 6, backgroundColor: primaryColor + '10', color: primaryColor, fontWeight: 500 }}>{t}</span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </>
-    );
-  };
-
-  const renderSection = (type: string) => {
-    switch (type) {
-      case 'experience': return renderAafiatakExperience();
-      case 'education': return renderAafiatakEducation();
-      case 'skills': return renderAafiatakSkills();
-      case 'certifications': return renderAafiatakCertifications();
-      case 'languages': return renderAafiatakLanguages();
-      case 'projects': return renderAafiatakProjects();
-      default: return null;
-    }
-  };
-
-  // Compute stats for the header
-  const avgRating = data.experience.length > 0 ? '4.9' : '—';
-
-  return (
-    <div style={{ ...A4, fontFamily: ff, fontSize: sz, direction: d, overflow: 'hidden' }}>
-      {/* ============ GRADIENT BANNER HEADER ============ */}
-      <div style={{
-        background: `linear-gradient(135deg, ${gradFrom}, ${gradVia}, ${gradTo})`,
-        color: '#ffffff',
-        padding: '28px 28px 22px',
-        position: 'relative' as const,
-        overflow: 'hidden',
-      }}>
-        {/* Decorative circles */}
-        <div style={{ position: 'absolute' as const, top: -30, right: -20, width: 120, height: 120, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.08)', filter: 'blur(2px)' }} />
-        <div style={{ position: 'absolute' as const, bottom: -40, left: -15, width: 100, height: 100, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.06)', filter: 'blur(2px)' }} />
-        <div style={{ position: 'absolute' as const, top: 20, right: 80, width: 60, height: 60, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.05)', filter: 'blur(1px)' }} />
-
-        {/* Header content */}
-        <div style={{ display: 'flex', gap: 18, alignItems: 'center', position: 'relative' as const, zIndex: 1 }}>
-          {/* Photo with gradient ring */}
-          <div style={{ flexShrink: 0 }}>
-            {p.photo ? (
-              <div style={{
-                width: 84,
-                height: 84,
-                borderRadius: '50%',
-                padding: 3,
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.2))',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-              }}>
-                <img src={p.photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid #ffffff' }} />
-              </div>
-            ) : (
-              <div style={{
-                width: 84,
-                height: 84,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '3px solid rgba(255,255,255,0.5)',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-              }}>
-                <span style={{ fontSize: sz + 16, fontWeight: 800, color: '#ffffff' }}>
-                  {(p.fullName || '?').charAt(0)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Name, title, badges */}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: sz + 14, fontWeight: 800, marginBottom: 2, letterSpacing: 0.3, textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-              {p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}
-            </div>
-            <div style={{ fontSize: sz + 3, fontWeight: 400, opacity: 0.92, marginBottom: 8, letterSpacing: 0.5 }}>
-              {p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}
-            </div>
-
-            {/* Specialization badges */}
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5, marginBottom: 8 }}>
-              {data.skills.slice(0, 3).map((sk) => (
-                <span key={sk.id} style={{
-                  fontSize: sz - 3,
-                  fontWeight: 500,
-                  padding: '2px 10px',
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  color: '#ffffff',
-                  backdropFilter: 'blur(4px)',
-                }}>
-                  {sk.name}
-                </span>
-              ))}
-            </div>
-
-            {/* Location + Experience row */}
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '4px 14px', fontSize: sz - 1, opacity: 0.88 }}>
-              {(p.city || p.country) && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}
-                </span>
-              )}
-              {data.experience.length > 0 && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <Briefcase size={10} /> {yearsExp}+ {language === 'ar' ? 'سنة خبرة' : 'yrs exp'}
-                </span>
-              )}
-              {p.email && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <Mail size={10} /> {p.email}
-                </span>
-              )}
-              {p.phone && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <Phone size={10} /> {p.phone}
-                </span>
-              )}
+      {/* Contact */}
+      {(p.email || p.phone || p.website || p.linkedin || p.github) && (
+        <div className={cardClass}>
+          <SectionHeader icon={<Phone size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'معلومات التواصل' : 'Contact'} />
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
+              {p.email && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span className="truncate">{p.email}</span></div>}
+              {p.phone && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span>{p.phone}</span></div>}
+              {p.website && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span className="truncate">{p.website}</span></div>}
+              {p.linkedin && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span className="truncate">{p.linkedin}</span></div>}
+              {p.github && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span className="truncate">{p.github}</span></div>}
             </div>
           </div>
         </div>
-
-        {/* Statistics row */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 10,
-          marginTop: 16,
-          position: 'relative' as const,
-          zIndex: 1,
-        }}>
-          <div style={{ textAlign: 'center' as const, padding: '8px 4px', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
-              <CheckCircle2 size={11} style={{ opacity: 0.9 }} />
-              <span style={{ fontSize: sz + 6, fontWeight: 800 }}>{completedJobs}</span>
-            </div>
-            <div style={{ fontSize: sz - 3, opacity: 0.8, fontWeight: 500 }}>
-              {language === 'ar' ? 'أعمال مكتملة' : 'Completed Jobs'}
-            </div>
-          </div>
-          <div style={{ textAlign: 'center' as const, padding: '8px 4px', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
-              <Star size={11} style={{ opacity: 0.9 }} />
-              <span style={{ fontSize: sz + 6, fontWeight: 800 }}>{avgRating}</span>
-            </div>
-            <div style={{ fontSize: sz - 3, opacity: 0.8, fontWeight: 500 }}>
-              {language === 'ar' ? 'التقييم' : 'Rating'}
-            </div>
-          </div>
-          <div style={{ textAlign: 'center' as const, padding: '8px 4px', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
-              <Clock size={11} style={{ opacity: 0.9 }} />
-              <span style={{ fontSize: sz + 6, fontWeight: 800 }}>{yearsExp}+</span>
-            </div>
-            <div style={{ fontSize: sz - 3, opacity: 0.8, fontWeight: 500 }}>
-              {language === 'ar' ? 'سنوات الخبرة' : 'Years Exp'}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ============ BODY CONTENT ============ */}
-      <div style={{ padding: '16px 20px 28px' }}>
-        {/* Summary / Bio section */}
-        {p.summary && renderGlassCard(
-          <>
-            {renderSectionHeader(<FileText size={14} />, language === 'ar' ? 'نبذة احترافية' : 'Professional Summary')}
-            <div style={{ fontSize: sz, color: '#444', whiteSpace: 'pre-line' as const, lineHeight: 1.7 }}>{p.summary}</div>
-          </>
-        )}
-
-        {/* Other sections */}
-        {sections.map((type) => (
-          <div key={type}>{renderSection(type)}</div>
-        ))}
-
-        {/* Contact footer row */}
-        {renderGlassCard(
-          <>
-            {renderSectionHeader(<Phone size={14} />, language === 'ar' ? 'معلومات التواصل' : 'Contact Information')}
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px 16px' }}>
-              {p.email && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
-                  <Mail size={11} style={{ color: primaryColor }} /> {p.email}
-                </span>
-              )}
-              {p.phone && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
-                  <Phone size={11} style={{ color: primaryColor }} /> {p.phone}
-                </span>
-              )}
-              {p.website && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
-                  <Globe size={11} style={{ color: primaryColor }} /> {p.website}
-                </span>
-              )}
-              {p.linkedin && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
-                  <Linkedin size={11} style={{ color: primaryColor }} /> {p.linkedin}
-                </span>
-              )}
-              {p.github && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
-                  <Github size={11} style={{ color: primaryColor }} /> {p.github}
-                </span>
-              )}
-              {(p.city || p.country || p.address) && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: sz - 1, color: '#555' }}>
-                  <MapPin size={11} style={{ color: primaryColor }} /> {[p.address, p.city, p.country].filter(Boolean).join(', ')}
-                </span>
-              )}
-            </div>
-          </>,
-          { marginBottom: 0 }
-        )}
-      </div>
+      )}
     </div>
   );
 }
 
+/* ============================================================================ */
+/*   Template Registry                                                          */
+/* ============================================================================ */
+
 export function getTemplateComponent(slug: string): React.ComponentType<TemplateProps> {
   const map: Record<string, React.ComponentType<TemplateProps>> = {
-    aafiatakpro: AafiatakProTemplate,
     classic: ClassicTemplate,
     modern: ModernTemplate,
     executive: ExecutiveTemplate,
@@ -3151,6 +1905,8 @@ export function getTemplateComponent(slug: string): React.ComponentType<Template
     healthcare: HealthcareTemplate,
     marketing: MarketingTemplate,
     finance: FinanceTemplate,
+    aafiatakpro: AafiatakProTemplate,
+    manager: CorporateTemplate,
   };
   return map[slug] || AafiatakProTemplate;
 }

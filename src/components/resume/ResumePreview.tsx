@@ -15,7 +15,6 @@ import {
   FinanceTemplate,
 } from '@/components/templates';
 import type { TemplateProps } from '@/components/templates';
-import { ProfessionalCVPreview } from './ProfessionalCVPreview';
 
 const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
   aafiatakpro: AafiatakProTemplate, classic: ClassicTemplate, modern: ModernTemplate,
@@ -47,7 +46,6 @@ export function ResumePreview() {
     );
   }
 
-  const isAafiatakPro = resume.template === 'aafiatakpro';
   const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
 
   return (
@@ -92,50 +90,30 @@ export function ResumePreview() {
         )}
       </div>
 
-      {/* Preview content */}
+      {/* Preview content - all templates are now responsive */}
       <div className="flex-1 overflow-y-auto overscroll-y-contain custom-scrollbar min-h-0">
         <AnimatePresence mode="wait">
-          {isAafiatakPro ? (
-            <motion.div
-              key="aafiatakpro"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="p-3 sm:p-4 md:p-6"
+          <motion.div
+            key={resume.template}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-3 sm:p-4 md:p-6"
+          >
+            <div
+              data-resume-preview
+              className="origin-top transition-transform duration-300"
+              style={{ transform: `scale(${previewZoom})`, transformOrigin: 'top center' }}
             >
-              <div style={{ transform: `scale(${previewZoom})`, transformOrigin: 'top center' }}>
-                <div data-resume-preview data-professional-cv>
-                  <ProfessionalCVPreview
-                    data={resume.data}
-                    primaryColor={resume.primaryColor}
-                    language={resume.language}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key={resume.template}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-start justify-center p-3 sm:p-4 md:p-8"
-            >
-              <div
-                data-resume-preview
-                className="origin-top transition-transform duration-300"
-                style={{ transform: `scale(${previewZoom})` }}
-              >
-                <TemplateComponent
-                  data={resume.data}
-                  primaryColor={resume.primaryColor}
-                  fontFamily={resume.fontFamily}
-                  fontSize={resume.fontSize}
-                  language={resume.language}
-                />
-              </div>
-            </motion.div>
-          )}
+              <TemplateComponent
+                data={resume.data}
+                primaryColor={resume.primaryColor}
+                fontFamily={resume.fontFamily}
+                fontSize={resume.fontSize}
+                language={resume.language}
+              />
+            </div>
+          </motion.div>
         </AnimatePresence>
       </div>
     </div>

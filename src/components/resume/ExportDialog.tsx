@@ -14,7 +14,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Download, FileText, Image, Loader2, FileImage, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ProfessionalCVPreview } from './ProfessionalCVPreview';
 import {
   AafiatakProTemplate, ClassicTemplate, ModernTemplate, ExecutiveTemplate,
   CreativeTemplate, MinimalTemplate, CorporateTemplate, ATSTemplate,
@@ -93,13 +92,13 @@ async function captureElement(element: HTMLElement, scale: number = 2): Promise<
 }
 
 /**
- * Find a safe Y position to break a page - avoid cutting through text.
- * Looks for whitespace gaps between sections by scanning the canvas pixels.
+ * Find a safe Y position to break a page - scans pixel rows for whitespace gaps.
+ * Uses a wide search range and scores rows by how "white" they are.
  */
 function findSafeBreakPoint(
   canvas: HTMLCanvasElement,
   idealY: number,
-  searchRange: number = 40
+  searchRange: number = 80
 ): number {
   const ctx = canvas.getContext('2d');
   if (!ctx) return idealY;
@@ -108,7 +107,6 @@ function findSafeBreakPoint(
   const startY = Math.max(0, idealY - searchRange);
   const endY = Math.min(canvas.height, idealY + searchRange);
 
-  // Scan rows looking for one that's mostly white (gap between sections)
   let bestY = idealY;
   let bestScore = Infinity;
 
@@ -126,7 +124,9 @@ function findSafeBreakPoint(
     }
 
     // Lower non-white pixel count = better break point (whitespace gap)
-    const score = nonWhitePixels + Math.abs(y - idealY) * 0.5;
+    // Also prefer points closer to the ideal break position
+    const distancePenalty = Math.abs(y - idealY) * 0.3;
+    const score = nonWhitePixels + distancePenalty;
     if (score < bestScore) {
       bestScore = score;
       bestY = y;
@@ -158,11 +158,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     try {
       setProgress(5);
 
-      const isAafiatakPro = resume.template === 'aafiatakpro';
-
       // ===== Step 1: Find or create the preview element to capture =====
       let captureTarget: HTMLElement | null = null;
-      let usedVisiblePreview = false;
       let parentWithTransform: HTMLElement | null = null;
       let savedTransform = '';
       let savedTransformOrigin = '';
@@ -173,7 +170,6 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         const style = window.getComputedStyle(existingPreview);
         if (style.display !== 'none' && style.visibility !== 'hidden' && existingPreview.offsetWidth > 0) {
           captureTarget = existingPreview;
-          usedVisiblePreview = true;
           setProgress(10);
 
           // Temporarily reset any CSS transform on parent (zoom/scale interferes with capture)
@@ -208,29 +204,17 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
         tempRoot = createRoot(tempContainer);
 
-        if (isAafiatakPro) {
-          // Render ProfessionalCVPreview for AafiatakPro
-          tempRoot.render(
-            React.createElement(ProfessionalCVPreview, {
-              data: resume.data,
-              primaryColor: resume.primaryColor,
-              language: resume.language,
-              disableAnimations: true,
-            })
-          );
-        } else {
-          // Render the selected template
-          const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
-          tempRoot.render(
-            React.createElement(TemplateComponent, {
-              data: resume.data,
-              primaryColor: resume.primaryColor,
-              fontFamily: resume.fontFamily,
-              fontSize: resume.fontSize,
-              language: resume.language,
-            })
-          );
-        }
+        // Render the selected template
+        const TemplateComponent = TEMPLATE_MAP[resume.template] || AafiatakProTemplate;
+        tempRoot.render(
+          React.createElement(TemplateComponent, {
+            data: resume.data,
+            primaryColor: resume.primaryColor,
+            fontFamily: resume.fontFamily,
+            fontSize: resume.fontSize,
+            language: resume.language,
+          })
+        );
 
         // Wait for render to complete
         setProgress(15);
@@ -281,13 +265,22 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         const imgWidth = canvas.width;
         const imgHeight = canvas.height;
 
+        // PDF dimensions in mm
         const pdfWidth = paperSize === 'a4' ? 210 : 215.9;
         const pdfHeight = paperSize === 'a4' ? 297 : 279.4;
 
+        // Margins in mm for professional look
+        const marginTop = 0;
+        const marginBottom = 0;
+        const marginLeft = 0;
+        const marginRight = 0;
+        const contentWidth = pdfWidth - marginLeft - marginRight;
+        const contentHeight = pdfHeight - marginTop - marginBottom;
+
+        // Calculate how the image maps to the PDF
         const actualWidth = imgWidth / 2; // divide by 2 (scale:2)
-        const actualHeight = imgHeight / 2;
-        const scaleRatio = pdfWidth / actualWidth;
-        const scaledHeight = actualHeight * scaleRatio;
+        const scaleRatio = contentWidth / actualWidth;
+        const totalScaledHeight = (imgHeight / 2) * scaleRatio;
 
         const pdf = new jsPDF({
           orientation: 'portrait',
@@ -295,43 +288,48 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           format: paperSize === 'a4' ? 'a4' : 'letter',
         });
 
-        if (scaledHeight <= pdfHeight) {
+        if (totalScaledHeight <= contentHeight) {
           // Single page - simple case
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
-          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, scaledHeight);
+          pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, contentWidth, totalScaledHeight);
         } else {
           // Multi-page PDF with smart page breaks
           const pageCanvas = document.createElement('canvas');
           const pageCtx = pageCanvas.getContext('2d')!;
+          
+          // How many pixels of the source image correspond to one PDF page height
           const pixelsPerMm = imgWidth / pdfWidth;
-          const pageHeightPixels = pdfHeight * pixelsPerMm;
-          // Leave a small margin at bottom of each page for cleaner breaks
-          const usablePageHeight = pageHeightPixels - (10 * pixelsPerMm); // 10mm bottom margin
+          const pageHeightPixels = contentHeight * pixelsPerMm;
 
           let currentY = 0;
           let pageNum = 0;
 
           while (currentY < imgHeight) {
+            // Calculate ideal slice height for this page
             let sliceHeight: number;
 
             if (pageNum === 0) {
-              // First page: use full usable height
-              sliceHeight = Math.min(usablePageHeight, imgHeight - currentY);
+              // First page: use full content height
+              sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
             } else {
-              // Subsequent pages: use full height minus top margin
+              // Subsequent pages: same height
               sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
             }
 
             // For all pages except the last, find a safe break point
             if (currentY + sliceHeight < imgHeight) {
-              const safeY = findSafeBreakPoint(canvas, currentY + sliceHeight, 50);
-              sliceHeight = safeY - currentY;
-              if (sliceHeight <= 0) sliceHeight = usablePageHeight; // fallback
+              const safeY = findSafeBreakPoint(canvas, currentY + sliceHeight, 100);
+              const adjustedSliceHeight = safeY - currentY;
+              // Only use the safe break if it doesn't make the page too short (min 50% of page height)
+              if (adjustedSliceHeight > pageHeightPixels * 0.5) {
+                sliceHeight = adjustedSliceHeight;
+              }
             }
 
             sliceHeight = Math.min(sliceHeight, imgHeight - currentY);
             if (sliceHeight <= 0) break;
 
+            // Create page canvas
             pageCanvas.width = imgWidth;
             pageCanvas.height = sliceHeight;
 
@@ -339,7 +337,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             pageCtx.fillStyle = '#ffffff';
             pageCtx.fillRect(0, 0, imgWidth, sliceHeight);
 
-            // Draw the slice
+            // Draw the slice from the source canvas
             pageCtx.drawImage(canvas, 0, currentY, imgWidth, sliceHeight, 0, 0, imgWidth, sliceHeight);
 
             const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
@@ -347,10 +345,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
             if (pageNum > 0) pdf.addPage();
 
-            // Add image with small margins for professional look
-            const topMargin = pageNum === 0 ? 0 : 5; // 5mm top margin on continued pages
-            const bottomMargin = (currentY + sliceHeight < imgHeight) ? 5 : 0; // 5mm bottom if more pages
-            pdf.addImage(pageImgData, 'JPEG', 0, topMargin, pdfWidth, pageScaledHeight);
+            // Add image filling the full page width
+            const yOffset = pageNum === 0 ? marginTop : marginTop;
+            pdf.addImage(pageImgData, 'JPEG', marginLeft, yOffset, contentWidth, pageScaledHeight);
 
             currentY += sliceHeight;
             pageNum++;

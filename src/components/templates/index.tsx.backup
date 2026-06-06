@@ -359,67 +359,6 @@ function renderSection(type: string, data: ResumeData, color: string, lang: 'ar'
   }
 }
 
-/* ---- Premium shared: Stats Strip ---- */
-function StatsStrip({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
-  const yrs = computeYears(data.experience);
-  const items: { value: number | string; label: string; icon: React.ReactNode; bg: string }[] = [];
-  if (yrs > 0) items.push({ value: `${yrs}+`, label: lang === 'ar' ? 'سنوات' : 'Years', icon: <Clock size={14} />, bg: color + '15' });
-  if (data.experience.length) items.push({ value: data.experience.length, label: lang === 'ar' ? 'وظائف' : 'Jobs', icon: <Briefcase size={14} />, bg: color + '10' });
-  if (data.skills.length) items.push({ value: data.skills.length, label: lang === 'ar' ? 'مهارات' : 'Skills', icon: <Zap size={14} />, bg: color + '10' });
-  if (data.certifications.length) items.push({ value: data.certifications.length, label: lang === 'ar' ? 'شهادات' : 'Certs', icon: <Award size={14} />, bg: color + '10' });
-  if (!items.length) return null;
-  return (
-    <div className="flex flex-wrap gap-2 sm:gap-3">
-      {items.map((s, i) => (
-        <div key={i} className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: s.bg }}>
-          <span style={{ color }}>{s.icon}</span>
-          <span className="text-xs sm:text-sm font-bold" style={{ color }}>{s.value}</span>
-          <span className="text-[10px] sm:text-xs text-gray-500">{s.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ---- Premium shared: Card Section with icon header ---- */
-function CardSection({ icon, title, color, children }: { icon: React.ReactNode; title: string; color: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-      <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-2">
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0" style={{ backgroundColor: color + '15', color }}>{icon}</div>
-        <h3 className="text-sm sm:text-base font-bold">{title}</h3>
-      </div>
-      <div className="px-4 sm:px-5 pb-4 sm:pb-5">{children}</div>
-    </div>
-  );
-}
-
-/* ---- Premium shared: Timeline Experience ---- */
-function TimelineExperience({ data, color, lang }: { data: ResumeData; color: string; lang: 'ar' | 'en' }) {
-  const isR = isRtl(lang);
-  if (!data.experience.length) return null;
-  return (
-    <div className="relative ps-5 border-s-2" style={{ borderInlineStartColor: color + '30' }}>
-      {data.experience.map((exp, idx) => (
-        <div key={exp.id} className={`relative ${idx < data.experience.length - 1 ? 'pb-4 mb-4 border-b border-gray-100 dark:border-gray-800' : ''}`}>
-          <div className="absolute w-3 h-3 rounded-full border-2 -translate-y-0.5" style={{ ...(isR ? { right: '-21px' } : { left: '-21px' }), backgroundColor: 'white', borderColor: color }} />
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-2">
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold">{exp.jobTitle}</h4>
-              <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-500">
-                <Building2 size={12} style={{ color: color + '80' }} /><span>{exp.company}</span>
-              </div>
-            </div>
-            <span className="text-[10px] sm:text-xs text-gray-400 shrink-0 flex items-center gap-1"><Calendar size={10} />{formatDateRange(exp.startDate, exp.endDate, exp.current, lang)}</span>
-          </div>
-          {exp.description && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1.5 whitespace-pre-line leading-relaxed">{exp.description}</p>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-
 /* ============================================================================ */
 /*   1. CLASSIC TEMPLATE - "الكلاسيكي"                                         */
 /* ============================================================================ */
@@ -428,7 +367,6 @@ export function ClassicTemplate({ data, primaryColor, fontFamily, fontSize, lang
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const yrs = computeYears(data.experience);
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
@@ -451,30 +389,27 @@ export function ClassicTemplate({ data, primaryColor, fontFamily, fontSize, lang
           </div>
         </div>
       </div>
+      {/* Decorative double line */}
       <div className="flex">
         <div className="flex-1 h-0.5" style={{ backgroundColor: primaryColor }} />
         <div className="flex-1 h-0.5" style={{ backgroundColor: primaryColor + '30' }} />
       </div>
 
-      {/* Stats */}
-      <div className="px-5 sm:px-8 pt-4"><StatsStrip data={data} color={primaryColor} lang={language} /></div>
-
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-4">
-          <CardSection icon={<User size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-widest pb-2 mb-3 border-b-2" style={{ color: primaryColor, borderColor: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-widest pb-2 mb-3 border-b-2" style={{ color: primaryColor, borderColor: primaryColor }}>{sectionLabel(type, language)}</h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -482,7 +417,7 @@ export function ClassicTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*   2. MODERN TEMPLATE - "العصري" - Two-Column Sidebar                        */
+/*   2. MODERN TEMPLATE - "العصري"                                             */
 /* ============================================================================ */
 
 export function ModernTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
@@ -566,15 +501,22 @@ export function ModernTemplate({ data, primaryColor, fontFamily, fontSize, langu
       {/* Main content */}
       <div className="flex-1 p-5 sm:p-6 space-y-5">
         {p.summary && (
-          <CardSection icon={<User size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
+          <div>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3">
+              <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
+              {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+            </h2>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+          </div>
         )}
         {mainItems.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
-            {type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3">
+              <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
+              {sectionLabel(type, language)}
+            </h2>
+            {renderSection(type, data, primaryColor, language)}
+          </div>
         ))}
       </div>
     </div>
@@ -615,30 +557,29 @@ export function ExecutiveTemplate({ data, primaryColor, fontFamily, fontSize, la
           </div>
         </div>
         {/* Stats strip */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 mt-5 pt-4 border-t border-white/20">
-          {yrs > 0 && <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{yrs}+</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'سنوات' : 'Years'}</div></div>}
-          <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{data.experience.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'وظائف' : 'Jobs'}</div></div>
-          <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{data.skills.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'مهارات' : 'Skills'}</div></div>
-          <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{data.certifications.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'شهادات' : 'Certs'}</div></div>
+        <div className="flex gap-4 mt-5 pt-4 border-t border-white/20">
+          {yrs > 0 && <div className="text-center"><div className="text-lg sm:text-xl font-extrabold">{yrs}+</div><div className="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'سنوات خبرة' : 'Years Exp'}</div></div>}
+          {data.experience.length > 0 && <div className="text-center"><div className="text-lg sm:text-xl font-extrabold">{data.experience.length}</div><div className="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'وظائف' : 'Positions'}</div></div>}
+          {data.certifications.length > 0 && <div className="text-center"><div className="text-lg sm:text-xl font-extrabold">{data.certifications.length}</div><div className="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'شهادات' : 'Certs'}</div></div>}
+          {data.skills.length > 0 && <div className="text-center"><div className="text-lg sm:text-xl font-extrabold">{data.skills.length}</div><div className="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'مهارات' : 'Skills'}</div></div>}
         </div>
       </div>
 
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-5">
-          <CardSection icon={<User size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+        <div className="px-6 sm:px-8 pt-5">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-2 mb-3 border-b-2" style={{ color: primaryColor, borderColor: primaryColor + '30' }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-2 mb-3 border-b-2" style={{ color: primaryColor, borderColor: primaryColor + '30' }}>{sectionLabel(type, language)}</h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -659,6 +600,8 @@ export function CreativeTemplate({ data, primaryColor, fontFamily, fontSize, lan
       {/* Geometric corner accent */}
       <div className="absolute top-0 w-28 h-28 sm:w-36 sm:h-36 opacity-10" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: 0, clipPath: isR ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)' }} />
       <div className="absolute top-0 w-18 h-18 sm:w-24 sm:h-24 opacity-20" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: 0, clipPath: isR ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)' }} />
+      {/* Circle accent */}
+      <div className="absolute top-16 w-8 h-8 sm:w-12 sm:h-12 rounded-full opacity-10" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: '40px' }} />
 
       {/* Header with gradient ring */}
       <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4 relative">
@@ -681,19 +624,23 @@ export function CreativeTemplate({ data, primaryColor, fontFamily, fontSize, lan
       {/* Gradient divider */}
       <div className="mx-5 sm:mx-8 h-1 rounded-full" style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60, ${primaryColor}10)` }} />
 
-      <div className="px-5 sm:px-8 pt-4"><StatsStrip data={data} color={primaryColor} lang={language} /></div>
-
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-4">
-          <CardSection icon={<Sparkles size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+            <Sparkles size={14} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+              {sectionIcon(type)}
+              {sectionLabel(type, language)}
+            </h2>
             {type === 'skills' ? (
               <div className="flex flex-wrap gap-2">
                 {data.skills.map((sk) => (
@@ -702,10 +649,28 @@ export function CreativeTemplate({ data, primaryColor, fontFamily, fontSize, lan
                   </span>
                 ))}
               </div>
-            ) : type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
-          </CardSection>
+            ) : type === 'projects' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {data.projects.map((proj) => (
+                  <div key={proj.id} className="rounded-xl border-2 p-3 sm:p-4" style={{ borderColor: primaryColor + '20', background: `linear-gradient(135deg, ${primaryColor}08, ${primaryColor}03)` }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-xs sm:text-sm font-bold">{proj.name}</h4>
+                      {proj.url && <ExternalLink size={12} style={{ color: primaryColor }} className="shrink-0" />}
+                    </div>
+                    {proj.description && <p className="text-[11px] sm:text-xs text-gray-500 mt-1.5 leading-relaxed">{proj.description}</p>}
+                    {proj.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {proj.technologies.map((t) => (
+                          <span key={t} className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-medium text-white" style={{ backgroundColor: primaryColor + '90' }}>{t}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+              renderSection(type, data, primaryColor, language)}
+          </div>
         ))}
       </div>
     </div>
@@ -741,9 +706,11 @@ export function MinimalTemplate({ data, primaryColor, fontFamily, fontSize, lang
         {sections.map((type) => (
           <div key={type}>
             <h2 className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
-            {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                {data.skills.map((sk) => <span key={sk.id} className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{sk.name}<span className="mx-1" style={{ color: primaryColor + '60' }}>·</span></span>)}
+              </div>
+            ) : type === 'languages' ? <LanguageList data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
           </div>
         ))}
@@ -782,12 +749,10 @@ export function CorporateTemplate({ data, primaryColor, fontFamily, fontSize, la
         </div>
       </div>
 
-      <div className="px-5 sm:px-8"><StatsStrip data={data} color={primaryColor} lang={language} /></div>
-
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-4">
-          <div className="rounded-xl p-4 sm:p-5 border-s-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm" style={{ borderInlineStartColor: primaryColor }}>
-            <h2 className="text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+        <div className="px-5 sm:px-8 pt-2">
+          <div className="rounded-lg p-3 sm:p-4 border-s-4" style={{ borderInlineStartColor: primaryColor, backgroundColor: primaryColor + '08' }}>
+            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
           </div>
         </div>
@@ -795,12 +760,17 @@ export function CorporateTemplate({ data, primaryColor, fontFamily, fontSize, la
 
       <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
-            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          <div key={type} className="rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 overflow-hidden">
+            <div className="px-3 sm:px-4 py-2 flex items-center gap-2" style={{ backgroundColor: primaryColor + '10', borderBottom: `2px solid ${primaryColor}20` }}>
+              <div style={{ color: primaryColor }}>{sectionIcon(type)}</div>
+              <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
+            </div>
+            <div className="p-3 sm:p-4">
+              {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
+               type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+               renderSection(type, data, primaryColor, language)}
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -808,7 +778,7 @@ export function CorporateTemplate({ data, primaryColor, fontFamily, fontSize, la
 }
 
 /* ============================================================================ */
-/*   7. ATS TEMPLATE - "المتوافق مع أنظمة التتبع"                              */
+/*   7. ATS TEMPLATE - "متوافق مع ATS"                                         */
 /* ============================================================================ */
 
 export function ATSTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
@@ -820,7 +790,7 @@ export function ATSTemplate({ data, primaryColor, fontFamily, fontSize, language
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
       <div className="px-6 sm:px-10 pt-6 sm:pt-8 pb-4 text-center">
         <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-        <p className="text-sm sm:text-base font-medium mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        <p className="text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-xs sm:text-sm text-gray-500">
           {p.email && <span>{p.email}</span>}
           {p.phone && <span>· {p.phone}</span>}
@@ -834,7 +804,7 @@ export function ATSTemplate({ data, primaryColor, fontFamily, fontSize, language
 
       {p.summary && (
         <div className="px-6 sm:px-10 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2">{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
@@ -842,11 +812,12 @@ export function ATSTemplate({ data, primaryColor, fontFamily, fontSize, language
       <div className="px-6 sm:px-10 pb-6 sm:pb-8 space-y-4 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '30' }}>{sectionLabel(type, language)}</h2>
-            {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <ExperienceItems data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white pb-1 mb-2 border-b border-gray-900 dark:border-gray-100">{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? (
+              <p className="text-xs sm:text-sm text-gray-700">{data.skills.map((sk, i) => <span key={sk.id}>{sk.name} ({SKILL_LEVEL_LABELS[language][sk.level]}){i < data.skills.length - 1 ? ' | ' : ''}</span>)}</p>
+            ) : type === 'languages' ? (
+              <p className="text-xs sm:text-sm text-gray-700">{data.languages.map((l, i) => <span key={l.id}>{l.name}: {LANGUAGE_LEVEL_LABELS[language][l.level]}{i < data.languages.length - 1 ? ' | ' : ''}</span>)}</p>
+            ) : renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -865,6 +836,7 @@ export function MedicalTemplate({ data, primaryColor, fontFamily, fontSize, lang
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Medical header with cross motif */}
       <div className="relative px-5 sm:px-8 py-5 sm:py-6 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${darken(primaryColor, 15)})` }}>
         <div className="absolute opacity-10" style={{ top: '-8px', [isR ? 'left' : 'right']: '12px' }}>
           <div className="relative w-20 h-20">
@@ -893,20 +865,22 @@ export function MedicalTemplate({ data, primaryColor, fontFamily, fontSize, lang
 
       {p.summary && (
         <div className="px-5 sm:px-8 pt-5">
-          <CardSection icon={<Shield size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>
+            <Shield size={14} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider pb-2 mb-3 border-b" style={{ color: primaryColor, borderColor: primaryColor + '30' }}>{sectionLabel(type, language)}</h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -924,6 +898,7 @@ export function EngineeringTemplate({ data, primaryColor, fontFamily, fontSize, 
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Blueprint dark header */}
       <div className="px-5 sm:px-8 py-5 sm:py-6 relative overflow-hidden" style={{ backgroundColor: '#1a1a2e' }}>
         <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
         <div className="flex items-center gap-4 sm:gap-5 relative">
@@ -948,20 +923,25 @@ export function EngineeringTemplate({ data, primaryColor, fontFamily, fontSize, 
 
       {p.summary && (
         <div className="px-5 sm:px-8 pt-5">
-          <CardSection icon={<Cpu size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
+            <span className="w-2 h-2 rotate-45 shrink-0" style={{ backgroundColor: primaryColor }} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line ps-4 border-s-2" style={{ borderInlineStartColor: primaryColor + '30' }}>{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
+              <span className="w-2 h-2 rotate-45 shrink-0" style={{ backgroundColor: primaryColor }} />
+              {sectionLabel(type, language)}
+            </h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -976,36 +956,50 @@ export function AcademicTemplate({ data, primaryColor, fontFamily, fontSize, lan
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const serifFont = '"Playfair Display", Georgia, serif';
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Centered header - publication style */}
       <div className="px-6 sm:px-10 pt-6 sm:pt-8 pb-4 text-center border-b-2" style={{ borderColor: primaryColor }}>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-        {p.jobTitle && <p className="text-sm sm:text-base italic mt-1" style={{ color: primaryColor }}>{p.jobTitle}</p>}
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: serifFont }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        {p.jobTitle && <p className="text-sm sm:text-base italic mt-1" style={{ color: primaryColor, fontFamily: serifFont }}>{p.jobTitle}</p>}
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 text-xs sm:text-sm text-gray-500">
           {p.email && <span>{p.email}</span>}
           {p.phone && <span>· {p.phone}</span>}
           {(p.city || p.country) && <span>· {[p.city, p.country].filter(Boolean).join(', ')}</span>}
           {p.website && <span>· {p.website}</span>}
+          {p.linkedin && <span>· {p.linkedin}</span>}
         </div>
       </div>
 
       {p.summary && (
         <div className="px-6 sm:px-10 pt-5">
-          <CardSection icon={<BookOpen size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Research & Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-center mb-3" style={{ color: primaryColor, fontFamily: serifFont }}>{language === 'ar' ? 'نبذة احترافية' : 'Research Interests & Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line text-justify">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-6 sm:px-10 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-6 sm:px-10 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
-            {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          <div key={type}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-3 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40', fontFamily: serifFont }}>{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {data.skills.map((sk) => <div key={sk.id} className="text-xs sm:text-sm text-gray-600 ps-3 flex items-center gap-1.5"><span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: primaryColor }} />{sk.name}</div>)}
+              </div>
+            ) : type === 'projects' ? (
+              <div className="space-y-3">
+                {data.projects.map((proj) => (
+                  <div key={proj.id}>
+                    <h4 className="text-xs sm:text-sm font-bold italic" style={{ fontFamily: serifFont }}>{proj.name}</h4>
+                    {proj.description && <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">{proj.description}</p>}
+                    {proj.technologies.length > 0 && <p className="text-[10px] sm:text-xs text-gray-400 italic mt-0.5">Keywords: {proj.technologies.join(', ')}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : renderSection(type, data, primaryColor, language)}
+          </div>
         ))}
       </div>
     </div>
@@ -1020,9 +1014,11 @@ export function ElegantTemplate({ data, primaryColor, fontFamily, fontSize, lang
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const serifFont = '"Playfair Display", Georgia, serif';
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Gradient header with decorative circles */}
       <div className="relative px-6 sm:px-8 py-6 sm:py-8 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc, ${darken(primaryColor, 10)})` }}>
         <div className="absolute -top-8 w-28 h-28 sm:w-36 sm:h-36 rounded-full border border-white/10" style={{ [isR ? 'left' : 'right']: '-20px' }} />
         <div className="absolute -top-2 w-16 h-16 sm:w-22 sm:h-22 rounded-full border border-white/8" style={{ [isR ? 'left' : 'right']: '-5px' }} />
@@ -1033,7 +1029,7 @@ export function ElegantTemplate({ data, primaryColor, fontFamily, fontSize, lang
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: serifFont }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
             <p className="text-xs sm:text-sm font-light opacity-90 mt-1 tracking-wide">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
               {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
@@ -1045,21 +1041,26 @@ export function ElegantTemplate({ data, primaryColor, fontFamily, fontSize, lang
       </div>
 
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-5">
-          <CardSection icon={<Star size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+        <div className="px-6 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-3 text-sm sm:text-base font-bold mb-3" style={{ fontFamily: serifFont, color: primaryColor }}>
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+            <span className="flex-1 h-px" style={{ backgroundColor: primaryColor + '30' }} />
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="flex items-center gap-3 text-sm sm:text-base font-bold mb-3" style={{ fontFamily: serifFont, color: primaryColor }}>
+              {sectionLabel(type, language)}
+              <span className="flex-1 h-px" style={{ backgroundColor: primaryColor + '30' }} />
+            </h2>
             {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -1074,9 +1075,11 @@ export function PremiumDarkTemplate({ data, primaryColor, fontFamily, fontSize, 
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const bgMain = '#0f0f1a';
+  const bgCard = '#1a1a2e';
 
   return (
-    <div className="w-full text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily), backgroundColor: '#0f0f1a' }}>
+    <div className="w-full text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily), backgroundColor: bgMain }}>
       <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4">
         <div className="flex items-center gap-4 sm:gap-5">
           {p.photo && (
@@ -1100,24 +1103,20 @@ export function PremiumDarkTemplate({ data, primaryColor, fontFamily, fontSize, 
         </div>
       </div>
 
+      {/* Glow divider */}
       <div className="mx-5 sm:mx-8 h-px" style={{ background: `linear-gradient(90deg, transparent, ${primaryColor}60, transparent)` }} />
 
       {p.summary && (
         <div className="px-5 sm:px-8 pt-5">
-          <div className="rounded-xl p-4 sm:p-5 border" style={{ borderColor: primaryColor + '15', backgroundColor: '#1a1a2e' }}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </div>
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
       <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
         {sections.map((type) => (
-          <div key={type} className="rounded-xl p-4 sm:p-5 border" style={{ borderColor: primaryColor + '15', backgroundColor: '#1a1a2e' }}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex items-center justify-center w-6 h-6 rounded-lg" style={{ backgroundColor: primaryColor + '15', color: primaryColor }}>{sectionIcon(type)}</div>
-              <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
-            </div>
+          <div key={type} className="rounded-xl p-4 sm:p-5 border" style={{ borderColor: primaryColor + '15', backgroundColor: bgCard }}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
             {type === 'skills' ? (
               <div className="flex flex-wrap gap-2">
                 {data.skills.map((sk) => (
@@ -1127,8 +1126,7 @@ export function PremiumDarkTemplate({ data, primaryColor, fontFamily, fontSize, 
                 ))}
               </div>
             ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
+              renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1145,17 +1143,20 @@ export function LuxuryTemplate({ data, primaryColor, fontFamily, fontSize, langu
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
   const gold = '#D4A853';
+  const bgDark = '#0a0f1e';
+  const serifFont = '"Playfair Display", Georgia, serif';
 
   return (
-    <div className="w-full text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily), backgroundColor: '#0a0f1e' }}>
+    <div className="w-full text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily), backgroundColor: bgDark }}>
       <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 text-center">
         {p.photo && (
           <div className="w-22 h-22 sm:w-28 sm:h-28 rounded-full overflow-hidden border-2 mx-auto mb-4" style={{ borderColor: gold, boxShadow: `0 0 24px ${gold}25` }}>
             <img src={p.photo} alt="" className="w-full h-full object-cover" />
           </div>
         )}
-        <h1 className="text-xl sm:text-2xl font-bold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: serifFont }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
         <p className="text-xs sm:text-sm font-light mt-1.5 tracking-[0.2em] uppercase" style={{ color: gold }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        {/* Ornamental divider */}
         <div className="flex items-center gap-3 mt-4 justify-center">
           <div className="w-12 h-px" style={{ backgroundColor: gold + '40' }} />
           <div className="w-2 h-2 rotate-45" style={{ backgroundColor: gold }} />
@@ -1170,23 +1171,27 @@ export function LuxuryTemplate({ data, primaryColor, fontFamily, fontSize, langu
 
       {p.summary && (
         <div className="px-6 sm:px-8 pt-4">
-          <div className="rounded-xl p-4 sm:p-5 border" style={{ borderColor: gold + '20', backgroundColor: '#111827' }}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-3 text-center" style={{ color: gold }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line text-center">{p.summary}</p>
-          </div>
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-3 text-center" style={{ fontFamily: serifFont, color: gold }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line text-center">{p.summary}</p>
         </div>
       )}
 
       <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-5">
         {sections.map((type) => (
-          <div key={type} className="rounded-xl p-4 sm:p-5 border" style={{ borderColor: gold + '20', backgroundColor: '#111827' }}>
-            <h2 className="flex items-center justify-center gap-3 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: gold }}>
+          <div key={type} className="rounded-xl p-4 sm:p-5 border" style={{ borderColor: gold + '20', backgroundColor: gold + '06' }}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ fontFamily: serifFont, color: gold }}>
               {sectionLabel(type, language)}
             </h2>
-            {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-2">
+                {data.skills.map((sk) => (
+                  <span key={sk.id} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border" style={{ borderColor: gold + '30', color: gold, backgroundColor: gold + '10' }}>
+                    {sk.name}
+                  </span>
+                ))}
+              </div>
+            ) : type === 'languages' ? <LanguageDots data={data} color={gold} lang={language} /> :
+              renderSection(type, data, gold, language)}
           </div>
         ))}
       </div>
@@ -1195,55 +1200,69 @@ export function LuxuryTemplate({ data, primaryColor, fontFamily, fontSize, langu
 }
 
 /* ============================================================================ */
-/*   14. STARTUP TEMPLATE - "الشركات الناشئة"                                   */
+/*   14. STARTUP TEMPLATE - "الناشئ"                                           */
 /* ============================================================================ */
 
 export function StartupTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const yrs = computeYears(data.experience);
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      <div className="relative px-5 sm:px-8 py-6 sm:py-7 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd, ${primaryColor}90)` }}>
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `radial-gradient(circle at 80% 20%, white 1px, transparent 1px)`, backgroundSize: '16px 16px' }} />
+      {/* Vibrant gradient header */}
+      <div className="relative px-5 sm:px-8 py-6 sm:py-8 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${primaryColor}05)` }}>
+        <div className="absolute top-0 w-40 h-40 sm:w-56 sm:h-56 rounded-full opacity-10 -translate-y-1/2" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: '-40px' }} />
+        <div className="absolute bottom-0 w-24 h-24 sm:w-32 sm:h-32 rounded-full opacity-8 translate-y-1/2" style={{ backgroundColor: primaryColor, [isR ? 'right' : 'left']: '20px' }} />
         <div className="flex items-center gap-4 sm:gap-5 relative">
           {p.photo && (
-            <div className="shrink-0 rounded-2xl p-1" style={{ background: 'rgba(255,255,255,0.3)' }}>
-              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-xl overflow-hidden"><img src={p.photo} alt="" className="w-full h-full object-cover" /></div>
+            <div className="shrink-0 rounded-2xl overflow-hidden border-2 shadow-lg" style={{ borderColor: primaryColor + '30' }}>
+              <div className="w-18 h-18 sm:w-22 sm:h-22">
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
             </div>
           )}
-          <div className="min-w-0 flex-1 text-white">
-            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
-              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
-              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
-              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
-              {p.website && <span className="flex items-center gap-1"><Globe size={11} />{p.website}</span>}
-            </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-sm sm:text-base font-semibold mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
           </div>
+        </div>
+        {/* Bold stats */}
+        <div className="flex gap-4 sm:gap-6 mt-5 pt-4 border-t relative" style={{ borderColor: primaryColor + '20' }}>
+          {yrs > 0 && <div className="flex items-center gap-2"><TrendingUp size={16} style={{ color: primaryColor }} /><div><div className="text-lg sm:text-xl font-extrabold" style={{ color: primaryColor }}>{yrs}+</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-wider">{language === 'ar' ? 'سنوات' : 'Years'}</div></div></div>}
+          {data.experience.length > 0 && <div className="flex items-center gap-2"><Briefcase size={16} style={{ color: primaryColor }} /><div><div className="text-lg sm:text-xl font-extrabold" style={{ color: primaryColor }}>{data.experience.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-wider">{language === 'ar' ? 'وظائف' : 'Roles'}</div></div></div>}
+          {data.projects.length > 0 && <div className="flex items-center gap-2"><FolderKanban size={16} style={{ color: primaryColor }} /><div><div className="text-lg sm:text-xl font-extrabold" style={{ color: primaryColor }}>{data.projects.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-wider">{language === 'ar' ? 'مشاريع' : 'Projects'}</div></div></div>}
         </div>
       </div>
 
-      <div className="px-5 sm:px-8 pt-4"><StatsStrip data={data} color={primaryColor} lang={language} /></div>
-
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-4">
-          <CardSection icon={<TrendingUp size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+        <div className="px-5 sm:px-8 pt-5">
+          <SectionCard>
+            <SectionHeader icon={<User size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} />
+            <div className="px-4 sm:px-5 pb-4 pt-2"><p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p></div>
+          </SectionCard>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-3 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
-            {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          <SectionCard key={type}>
+            <SectionHeader icon={<span style={{ color: primaryColor }}>{sectionIcon(type)}</span>} title={sectionLabel(type, language)} />
+            <div className="px-4 sm:px-5 pb-4 pt-2">
+              {type === 'skills' ? (
+                <div className="flex flex-wrap gap-2">
+                  {data.skills.map((sk) => (
+                    <span key={sk.id} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: primaryColor + 'cc' }}>
+                      {sk.name}
+                    </span>
+                  ))}
+                </div>
+              ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+               renderSection(type, data, primaryColor, language)}
+            </div>
+          </SectionCard>
         ))}
       </div>
     </div>
@@ -1251,7 +1270,7 @@ export function StartupTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*   15. CONSULTANT TEMPLATE - "الاستشاري"                                      */
+/*   15. CONSULTANT TEMPLATE - "الاستشاري"                                     */
 /* ============================================================================ */
 
 export function ConsultantTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
@@ -1261,45 +1280,52 @@ export function ConsultantTemplate({ data, primaryColor, fontFamily, fontSize, l
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      <div className="px-5 sm:px-8 py-5 sm:py-6 text-white" style={{ background: `linear-gradient(135deg, ${darken(primaryColor, 10)}, ${primaryColor})` }}>
-        <div className="flex items-center gap-4 sm:gap-5">
-          {p.photo && (
-            <div className="shrink-0">
-              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
-                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+      {/* Navy professional header */}
+      <div className="flex">
+        <div className="w-2 shrink-0" style={{ background: `linear-gradient(180deg, ${primaryColor}, ${darken(primaryColor, 20)})` }} />
+        <div className="flex-1 min-w-0">
+          <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-4">
+            <div className="flex items-center gap-4 sm:gap-5">
+              {p.photo && (
+                <div className="shrink-0">
+                  <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-3 shadow-md" style={{ borderColor: primaryColor + '40' }}>
+                    <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+                <p className="text-sm sm:text-base font-medium mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+                <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
               </div>
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
-              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
-              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
-              {p.linkedin && <span className="flex items-center gap-1"><Linkedin size={11} />{p.linkedin}</span>}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-5 sm:px-8 pt-4"><StatsStrip data={data} color={primaryColor} lang={language} /></div>
+      <div className="h-px mx-5 sm:mx-8" style={{ backgroundColor: primaryColor + '20' }} />
 
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-4">
-          <CardSection icon={<Target size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
+            <span className="w-1.5 h-5 rounded" style={{ backgroundColor: primaryColor }} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
+              <span className="w-1.5 h-5 rounded" style={{ backgroundColor: primaryColor }} />
+              {sectionLabel(type, language)}
+            </h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -1307,7 +1333,7 @@ export function ConsultantTemplate({ data, primaryColor, fontFamily, fontSize, l
 }
 
 /* ============================================================================ */
-/*   16. SOFTWARE TEMPLATE - "مطور البرمجيات"                                  */
+/*   16. SOFTWARE TEMPLATE - "المبرمج"                                         */
 /* ============================================================================ */
 
 export function SoftwareTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
@@ -1317,53 +1343,65 @@ export function SoftwareTemplate({ data, primaryColor, fontFamily, fontSize, lan
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      <div className="px-5 sm:px-8 py-5 sm:py-6 relative overflow-hidden" style={{ backgroundColor: '#0d1117' }}>
-        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(255,255,255,0.1) 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,255,255,0.1) 20px)' }} />
-        <div className="flex items-center gap-4 sm:gap-5 relative">
+      {/* Terminal-style dark header */}
+      <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-4" style={{ backgroundColor: '#1a1a2e' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#febc2e' }} />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#28c840' }} />
+          <span className="text-[10px] sm:text-xs text-gray-500 ms-2 font-mono">resume.tsx</span>
+        </div>
+        <div className="font-mono text-xs sm:text-sm text-gray-500">
+          <span style={{ color: primaryColor }}>const</span> <span className="text-gray-300">developer</span> <span style={{ color: primaryColor }}>=</span> <span className="text-gray-400">{'{'}</span>
+        </div>
+        <div className="mt-3 flex items-center gap-4 sm:gap-5">
           {p.photo && (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 shrink-0" style={{ borderColor: primaryColor }}>
+            <div className="shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2" style={{ borderColor: primaryColor + '50' }}>
               <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
-          <div className="min-w-0 flex-1 text-white">
-            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-extrabold text-white font-mono">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
             <p className="text-xs sm:text-sm font-mono mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
-              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
-              {p.github && <span className="flex items-center gap-1"><Github size={11} />{p.github}</span>}
-              {p.website && <span className="flex items-center gap-1"><Globe size={11} />{p.website}</span>}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs text-gray-400 font-mono">
+              {p.email && <span>{p.email}</span>}
+              {p.phone && <span>{p.phone}</span>}
+              {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+              {p.github && <span className="flex items-center gap-1"><Github size={10} />{p.github}</span>}
             </div>
           </div>
         </div>
-        <div className="absolute bottom-0 inset-x-0 h-1" style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60, transparent)` }} />
       </div>
 
-      <div className="px-5 sm:px-8 pt-4"><StatsStrip data={data} color={primaryColor} lang={language} /></div>
-
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-4">
-          <CardSection icon={<Code size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white mb-3">
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ backgroundColor: primaryColor + '15', color: primaryColor }}>{'>'}</span>
+            {language === 'ar' ? 'نبذة احترافية' : 'Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 font-mono">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white mb-3">
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ backgroundColor: primaryColor + '15', color: primaryColor }}>{'>'}</span>
+              {sectionLabel(type, language)}
+            </h2>
             {type === 'skills' ? (
               <div className="flex flex-wrap gap-2">
                 {data.skills.map((sk) => (
-                  <span key={sk.id} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-medium border" style={{ borderColor: primaryColor + '30', color: primaryColor, backgroundColor: primaryColor + '08' }}>
+                  <span key={sk.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono border" style={{ borderColor: primaryColor + '30', color: primaryColor, backgroundColor: primaryColor + '08' }}>
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sk.level === 'expert' ? '#22c55e' : sk.level === 'advanced' ? primaryColor : '#94a3b8' }} />
                     {sk.name}
-                    <span className="opacity-50 ms-1 text-[10px]">{SKILL_LEVEL_LABELS[language][sk.level]}</span>
                   </span>
                 ))}
               </div>
-            ) : type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+            ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -1378,49 +1416,62 @@ export function NurseTemplate({ data, primaryColor, fontFamily, fontSize, langua
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const yrs = computeYears(data.experience);
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      <div className="relative px-5 sm:px-8 py-5 sm:py-7 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${lighten(primaryColor, 15)})` }}>
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+      {/* Soft caring header */}
+      <div className="relative px-5 sm:px-8 pt-6 sm:pt-8 pb-5 sm:pb-6 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}18, ${primaryColor}08)` }}>
+        {/* Heart motif */}
+        <div className="absolute top-3 opacity-8" style={{ [isR ? 'left' : 'right']: '16px' }}>
+          <Heart size={48} style={{ color: primaryColor }} />
+        </div>
         <div className="flex items-center gap-4 sm:gap-5 relative">
           {p.photo && (
-            <div className="rounded-full p-1 shrink-0" style={{ background: 'rgba(255,255,255,0.3)' }}>
-              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2 border-white/40">
+            <div className="shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-3 shadow-md" style={{ borderColor: primaryColor + '40' }}>
                 <img src={p.photo} alt="" className="w-full h-full object-cover" />
               </div>
             </div>
           )}
-          <div className="min-w-0 flex-1 text-white">
-            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
-              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
-              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
-              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Heart size={14} style={{ color: primaryColor }} />
+              <p className="text-sm sm:text-base font-semibold" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
             </div>
+            <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
           </div>
+        </div>
+
+        {/* Stats bar */}
+        <div className="flex gap-3 sm:gap-4 mt-5 pt-4 border-t relative" style={{ borderColor: primaryColor + '20' }}>
+          {yrs > 0 && <div className="flex-1 rounded-xl p-2.5 sm:p-3 text-center" style={{ backgroundColor: primaryColor + '10' }}><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{yrs}+</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'سنوات خبرة' : 'Years Exp'}</div></div>}
+          {data.certifications.length > 0 && <div className="flex-1 rounded-xl p-2.5 sm:p-3 text-center" style={{ backgroundColor: primaryColor + '10' }}><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{data.certifications.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'شهادات' : 'Certs'}</div></div>}
+          {data.languages.length > 0 && <div className="flex-1 rounded-xl p-2.5 sm:p-3 text-center" style={{ backgroundColor: primaryColor + '10' }}><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{data.languages.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'لغات' : 'Langs'}</div></div>}
         </div>
       </div>
 
-      <div className="px-5 sm:px-8 pt-4"><StatsStrip data={data} color={primaryColor} lang={language} /></div>
-
       {p.summary && (
         <div className="px-5 sm:px-8 pt-4">
-          <CardSection icon={<Heart size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+          <SectionCard>
+            <SectionHeader icon={<Heart size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} />
+            <div className="px-4 sm:px-5 pb-4 pt-2"><p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p></div>
+          </SectionCard>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-3 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type} className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: primaryColor + '20', backgroundColor: primaryColor + '04' }}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+              <Heart size={12} />
+              {sectionLabel(type, language)}
+            </h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -1428,59 +1479,110 @@ export function NurseTemplate({ data, primaryColor, fontFamily, fontSize, langua
 }
 
 /* ============================================================================ */
-/*   18. HEALTHCARE TEMPLATE - "الرعاية الصحية"                                 */
+/*   18. HEALTHCARE TEMPLATE - "أخصائي صحي"                                    */
 /* ============================================================================ */
 
 export function HealthcareTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const sideSections = ['skills', 'certifications', 'languages'];
+  const mainSections = ['experience', 'education', 'projects'];
+  const sidebarItems = sideSections.filter((s) => sections.includes(s));
+  const mainItems = mainSections.filter((s) => sections.includes(s));
 
   return (
-    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      <div className="relative px-5 sm:px-8 py-5 sm:py-6 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${darken(primaryColor, 12)})` }}>
-        <div className="absolute inset-0 opacity-8" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, white 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
-        <div className="flex items-center gap-4 sm:gap-5 relative">
-          {p.photo && (
-            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
-              <img src={p.photo} alt="" className="w-full h-full object-cover" />
+    <div className="w-full flex flex-col sm:flex-row" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Teal sidebar */}
+      <div className="w-full sm:w-[38%] p-5 sm:p-6" style={{ background: `linear-gradient(180deg, ${primaryColor}, ${darken(primaryColor, 15)})` }}>
+        <div className="flex flex-col items-center text-center text-white">
+          {/* Medical cross icon */}
+          <div className="mb-3 w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+            <Shield size={20} />
+          </div>
+          {p.photo ? (
+            <div className="mb-3">
+              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
+                <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
+              </div>
+            </div>
+          ) : (
+            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-white/20 flex items-center justify-center mb-3">
+              <span className="text-xl font-bold text-white/80">{p.fullName ? p.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) : '?'}</span>
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
-              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
-              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
-              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
-            </div>
+          <h1 className="text-base sm:text-lg font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+          <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-white/20">
+          <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 opacity-70">{language === 'ar' ? 'معلومات التواصل' : 'Contact'}</h3>
+          <div className="space-y-2 text-[10px] sm:text-xs">
+            {p.email && <div className="flex items-center gap-2"><Mail size={11} className="shrink-0" /><span className="break-all">{p.email}</span></div>}
+            {p.phone && <div className="flex items-center gap-2"><Phone size={11} className="shrink-0" />{p.phone}</div>}
+            {(p.city || p.country) && <div className="flex items-center gap-2"><MapPin size={11} className="shrink-0" />{[p.city, p.country].filter(Boolean).join(', ')}</div>}
           </div>
         </div>
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-white/20 relative">
-          <div className="text-center rounded-lg py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-sm sm:text-base font-extrabold">{computeYears(data.experience)}+</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'سنوات' : 'Years'}</div></div>
-          <div className="text-center rounded-lg py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-sm sm:text-base font-extrabold">{data.experience.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'خبرات' : 'Exp'}</div></div>
-          <div className="text-center rounded-lg py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-sm sm:text-base font-extrabold">{data.certifications.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'ترخيص' : 'Lic'}</div></div>
-          <div className="text-center rounded-lg py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-sm sm:text-base font-extrabold">{data.skills.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'مهارة' : 'Skills'}</div></div>
-        </div>
+
+        {sidebarItems.map((type) => (
+          <div key={type} className="mt-5 pt-4 border-t border-white/20">
+            <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 opacity-70">{sectionLabel(type, language)}</h3>
+            {type === 'skills' && (
+              <div className="space-y-2.5">
+                {data.skills.map((sk) => (
+                  <div key={sk.id}>
+                    <div className="flex justify-between text-[10px] sm:text-xs mb-1"><span>{sk.name}</span><span className="opacity-60">{SKILL_LEVEL_LABELS[language][sk.level]}</span></div>
+                    <div className="h-1.5 rounded-full bg-white/20 overflow-hidden"><div className="h-full rounded-full bg-white/80" style={{ width: getSkillWidth(sk.level) }} /></div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {type === 'certifications' && (
+              <div className="space-y-2">
+                {data.certifications.map((c) => (
+                  <div key={c.id} className="rounded-lg p-2" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                    <div className="text-[10px] sm:text-xs font-semibold">{c.name}</div>
+                    <div className="text-[9px] sm:text-[10px] opacity-70 mt-0.5">{c.issuer}{c.date ? ` · ${c.date}` : ''}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {type === 'languages' && (
+              <div className="space-y-2">
+                {data.languages.map((l) => {
+                  const filled = getLanguageDots(l.level);
+                  return (
+                    <div key={l.id} className="flex items-center gap-2">
+                      <span className="text-[10px] sm:text-xs min-w-[50px]">{l.name}</span>
+                      <div className="flex gap-1">{[1,2,3,4,5].map(d => <div key={d} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: d <= filled ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)' }} />)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
-      {p.summary && (
-        <div className="px-5 sm:px-8 pt-5">
-          <CardSection icon={<Shield size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
+      {/* Main content */}
+      <div className="flex-1 p-5 sm:p-6 space-y-5">
+        {p.summary && (
+          <div>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3">
+              <Shield size={14} style={{ color: primaryColor }} />
+              {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+            </h2>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
-        </div>
-      )}
-
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
-        {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
-            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
+        )}
+        {mainItems.map((type) => (
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3">
+              <span style={{ color: primaryColor }}>{sectionIcon(type)}</span>
+              {sectionLabel(type, language)}
+            </h2>
+            {renderSection(type, data, primaryColor, language)}
+          </div>
         ))}
       </div>
     </div>
@@ -1498,45 +1600,63 @@ export function MarketingTemplate({ data, primaryColor, fontFamily, fontSize, la
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      <div className="relative px-5 sm:px-8 py-6 sm:py-7 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc, ${darken(primaryColor, 10)})` }}>
-        <div className="absolute top-0 w-40 h-40 rounded-full opacity-10 -translate-y-1/2" style={{ backgroundColor: 'white', [isR ? 'left' : 'right']: '-20px' }} />
-        <div className="flex items-center gap-4 sm:gap-5 relative">
-          {p.photo && (
-            <div className="rounded-full p-1 shrink-0" style={{ background: 'rgba(255,255,255,0.3)' }}>
-              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2 border-white/40"><img src={p.photo} alt="" className="w-full h-full object-cover" /></div>
+      {/* Vibrant bold header */}
+      <div className="relative px-5 sm:px-8 py-6 sm:py-8 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc, ${darken(primaryColor, 10)})` }}>
+        {/* Dynamic shapes */}
+        <div className="absolute -bottom-6 w-32 h-32 sm:w-44 sm:h-44 rounded-full opacity-10" style={{ backgroundColor: 'white', [isR ? 'left' : 'right']: '-20px' }} />
+        <div className="absolute -top-4 w-20 h-20 sm:w-28 sm:h-28 rounded-full opacity-5" style={{ backgroundColor: 'white', [isR ? 'right' : 'left']: '40px' }} />
+        <div className="relative">
+          <div className="flex items-center gap-4 sm:gap-5">
+            {p.photo && (
+              <div className="shrink-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 shadow-lg rotate-3" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
+                  <img src={p.photo} alt="" className="w-full h-full object-cover" />
+                </div>
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+              <p className="text-sm sm:text-base font-medium mt-1 opacity-90">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
             </div>
-          )}
-          <div className="min-w-0 flex-1 text-white">
-            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
-              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
-              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
-              {p.linkedin && <span className="flex items-center gap-1"><Linkedin size={11} />{p.linkedin}</span>}
-              {p.website && <span className="flex items-center gap-1"><Globe size={11} />{p.website}</span>}
-            </div>
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-4 text-[10px] sm:text-xs opacity-85">
+            {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
+            {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
+            {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+            {p.website && <span className="flex items-center gap-1"><Globe size={11} />{p.website}</span>}
+            {p.linkedin && <span className="flex items-center gap-1"><Linkedin size={11} />{p.linkedin}</span>}
           </div>
         </div>
       </div>
 
-      <div className="px-5 sm:px-8 pt-4"><StatsStrip data={data} color={primaryColor} lang={language} /></div>
-
       {p.summary && (
-        <div className="px-5 sm:px-8 pt-4">
-          <CardSection icon={<PieChart size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+            <Target size={14} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
-            {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+              <span>{sectionIcon(type)}</span>
+              {sectionLabel(type, language)}
+            </h2>
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-2">
+                {data.skills.map((sk) => (
+                  <span key={sk.id} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}bb)` }}>
+                    {sk.name}
+                  </span>
+                ))}
+              </div>
+            ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -1551,51 +1671,61 @@ export function FinanceTemplate({ data, primaryColor, fontFamily, fontSize, lang
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const yrs = computeYears(data.experience);
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      <div className="relative px-5 sm:px-8 py-5 sm:py-6 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${darken(primaryColor, 15)}, ${primaryColor})` }}>
-        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'linear-gradient(45deg, white 25%, transparent 25%, transparent 75%, white 75%)', backgroundSize: '20px 20px' }} />
-        <div className="flex items-center gap-4 sm:gap-5 relative">
+      {/* Dark conservative header */}
+      <div className="px-5 sm:px-8 py-5 sm:py-6 text-white" style={{ background: `linear-gradient(135deg, #1a1a2e, #16213e)` }}>
+        <div className="flex items-center gap-4 sm:gap-5">
           {p.photo && (
-            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
-              <img src={p.photo} alt="" className="w-full h-full object-cover" />
+            <div className="shrink-0">
+              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2" style={{ borderColor: primaryColor + '60' }}>
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
-              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
-              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
-              {p.linkedin && <span className="flex items-center gap-1"><Linkedin size={11} />{p.linkedin}</span>}
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-sm sm:text-base font-medium mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
+              {p.email && <span className="flex items-center gap-1"><Mail size={11} style={{ color: primaryColor + '80' }} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={11} style={{ color: primaryColor + '80' }} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} style={{ color: primaryColor + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+              {p.linkedin && <span className="flex items-center gap-1"><Linkedin size={11} style={{ color: primaryColor + '80' }} />{p.linkedin}</span>}
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-white/20 relative">
-          <div className="text-center rounded-lg py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-sm sm:text-base font-extrabold">{computeYears(data.experience)}+</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'سنوات' : 'Years'}</div></div>
-          <div className="text-center rounded-lg py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-sm sm:text-base font-extrabold">{data.experience.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'وظائف' : 'Jobs'}</div></div>
-          <div className="text-center rounded-lg py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-sm sm:text-base font-extrabold">{data.skills.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'مهارات' : 'Skills'}</div></div>
-          <div className="text-center rounded-lg py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-sm sm:text-base font-extrabold">{data.certifications.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'شهادات' : 'Certs'}</div></div>
+        {/* Key metrics */}
+        <div className="flex gap-4 sm:gap-6 mt-5 pt-4 border-t border-white/10">
+          {yrs > 0 && <div><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{yrs}+</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'سنوات خبرة' : 'Years Exp'}</div></div>}
+          {data.experience.length > 0 && <div><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{data.experience.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'وظائف' : 'Positions'}</div></div>}
+          {data.certifications.length > 0 && <div><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{data.certifications.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'شهادات' : 'Certifications'}</div></div>}
         </div>
       </div>
+      <div className="h-1" style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60, transparent)` }} />
 
       {p.summary && (
         <div className="px-5 sm:px-8 pt-5">
-          <CardSection icon={<BarChart3 size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
+            <BarChart3 size={14} style={{ color: primaryColor }} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3 pb-2 border-b" style={{ borderColor: primaryColor + '20' }}>
+              <span style={{ color: primaryColor }}>{sectionIcon(type)}</span>
+              {sectionLabel(type, language)}
+            </h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
-          </CardSection>
+          </div>
         ))}
       </div>
     </div>
@@ -1603,7 +1733,7 @@ export function FinanceTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*   AAFIATAK PRO TEMPLATE (reference)                                          */
+/*   21. AAFIATAK PRO TEMPLATE - "عافية تك برو"                                */
 /* ============================================================================ */
 
 export function AafiatakProTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
@@ -1614,6 +1744,7 @@ export function AafiatakProTemplate({ data, primaryColor, fontFamily, fontSize, 
 
   return (
     <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Premium gradient banner */}
       <div className="relative px-5 sm:px-8 py-5 sm:py-7 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${darken(primaryColor, 15)})` }}>
         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 30% 40%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
         <div className="flex items-center gap-4 sm:gap-5 relative">
@@ -1639,6 +1770,8 @@ export function AafiatakProTemplate({ data, primaryColor, fontFamily, fontSize, 
             </div>
           </div>
         </div>
+
+        {/* Stats grid */}
         <div className="grid grid-cols-4 gap-2 sm:gap-3 mt-5 pt-4 border-t border-white/20 relative">
           {yrs > 0 && <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{yrs}+</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'سنوات' : 'Years'}</div></div>}
           <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{data.experience.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'وظائف' : 'Jobs'}</div></div>
@@ -1649,21 +1782,82 @@ export function AafiatakProTemplate({ data, primaryColor, fontFamily, fontSize, 
 
       {p.summary && (
         <div className="px-5 sm:px-8 pt-5">
-          <CardSection icon={<User size={14} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} color={primaryColor}>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </CardSection>
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>
+            <User size={14} style={{ color: primaryColor }} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
-        {sections.map((type) => (
-          <CardSection key={type} icon={sectionIcon(type)} title={sectionLabel(type, language)} color={primaryColor}>
-            {type === 'experience' ? <TimelineExperience data={data} color={primaryColor} lang={language} /> :
-             type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
-          </CardSection>
-        ))}
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
+        {sections.map((type) => {
+          /* Timeline style for experience */
+          if (type === 'experience' && data.experience.length > 0) {
+            return (
+              <div key={type}>
+                <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-4" style={{ color: primaryColor }}>
+                  <Briefcase size={14} style={{ color: primaryColor }} />
+                  {sectionLabel(type, language)}
+                </h2>
+                <div className="relative ps-5 border-s-2" style={{ borderInlineStartColor: primaryColor + '30' }}>
+                  {data.experience.map((exp, idx) => (
+                    <div key={exp.id} className={`relative ${idx < data.experience.length - 1 ? 'pb-4 mb-4 border-b border-gray-100 dark:border-gray-800' : ''}`}>
+                      {/* Timeline dot */}
+                      <div className="absolute w-3 h-3 rounded-full border-2 -translate-y-0.5" style={{ ...(isR ? { right: '-21px' } : { left: '-21px' }), backgroundColor: 'white', borderColor: primaryColor }} />
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-2">
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-bold">{exp.jobTitle}</h4>
+                          <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-500">
+                            <Building2 size={12} style={{ color: primaryColor + '80' }} />
+                            <span>{exp.company}</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] sm:text-xs text-gray-400 shrink-0 flex items-center gap-1">
+                          <Calendar size={10} />{formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
+                        </span>
+                      </div>
+                      {exp.description && (
+                        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1.5 whitespace-pre-line leading-relaxed">{exp.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={type}>
+              <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>
+                <span style={{ color: primaryColor }}>{sectionIcon(type)}</span>
+                {sectionLabel(type, language)}
+              </h2>
+              {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+               type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+               type === 'projects' ? (
+                 <div className="space-y-2 sm:space-y-3">
+                   {data.projects.map((proj) => (
+                     <div key={proj.id} className="rounded-xl border p-3 sm:p-4" style={{ borderColor: primaryColor + '20', backgroundColor: primaryColor + '06' }}>
+                       <div className="flex items-start justify-between gap-2">
+                         <h4 className="text-xs sm:text-sm font-bold">{proj.name}</h4>
+                         {proj.url && <ExternalLink size={12} style={{ color: primaryColor }} className="shrink-0" />}
+                       </div>
+                       {proj.description && <p className="text-[11px] sm:text-xs text-gray-500 mt-1.5 leading-relaxed">{proj.description}</p>}
+                       {proj.technologies.length > 0 && (
+                         <div className="flex flex-wrap gap-1 mt-2">
+                           {proj.technologies.map((t) => (
+                             <span key={t} className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-medium text-white" style={{ backgroundColor: primaryColor + '90' }}>{t}</span>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   ))}
+                 </div>
+               ) : renderSection(type, data, primaryColor, language)}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

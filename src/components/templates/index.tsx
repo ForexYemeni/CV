@@ -100,6 +100,36 @@ function computeYears(experience: { startDate: string; endDate: string; current:
   return Math.round(totalMonths / 12);
 }
 
+/* Extra helpers for premium templates */
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace('#', '');
+  return { r: parseInt(h.substring(0, 2), 16), g: parseInt(h.substring(2, 4), 16), b: parseInt(h.substring(4, 6), 16) };
+}
+
+function lighten(hex: string, pct: number): string {
+  const { r, g, b } = hexToRgb(hex);
+  const f = pct / 100;
+  return `rgb(${Math.round(r + (255 - r) * f)},${Math.round(g + (255 - g) * f)},${Math.round(b + (255 - b) * f)})`;
+}
+
+function darken(hex: string, pct: number): string {
+  const { r, g, b } = hexToRgb(hex);
+  const f = 1 - pct / 100;
+  return `rgb(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)})`;
+}
+
+function sectionIcon(type: string): React.ReactNode {
+  switch (type) {
+    case 'experience': return <Briefcase size={14} />;
+    case 'education': return <GraduationCap size={14} />;
+    case 'skills': return <Zap size={14} />;
+    case 'certifications': return <Award size={14} />;
+    case 'languages': return <Globe2 size={14} />;
+    case 'projects': return <FolderKanban size={14} />;
+    default: return <FileText size={14} />;
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Shared Reusable Components                                                */
 /* -------------------------------------------------------------------------- */
@@ -339,33 +369,46 @@ export function ClassicTemplate({ data, primaryColor, fontFamily, fontSize, lang
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Header with photo and info */}
-      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b-2" style={{ borderColor: primaryColor }}>
-        <div className="flex items-center gap-3 sm:gap-4">
-          {p.photo && <Avatar photo={p.photo} name={p.fullName} color={primaryColor} size="md" />}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white truncate">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <div className="text-xs sm:text-sm font-medium mt-0.5 inline-block border-b pb-0.5" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</div>
-            <div className="mt-2"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Double border header */}
+      <div style={{ borderColor: primaryColor }} className="border-b-2">
+        <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-5 sm:pb-6">
+          <div className="flex items-start gap-4 sm:gap-5">
+            {p.photo && (
+              <div className="shrink-0">
+                <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-4 shadow-md" style={{ borderColor: primaryColor }}>
+                  <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
+                </div>
+              </div>
+            )}
+            <div className="min-w-0 flex-1 pt-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+              <p className="text-sm sm:text-base font-medium mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+              <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+            </div>
           </div>
         </div>
       </div>
+      {/* Decorative double line */}
+      <div className="flex">
+        <div className="flex-1 h-0.5" style={{ backgroundColor: primaryColor }} />
+        <div className="flex-1 h-0.5" style={{ backgroundColor: primaryColor + '30' }} />
+      </div>
 
-      {/* Summary */}
       {p.summary && (
-        <div className="px-4 sm:px-6 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b-2" style={{ color: primaryColor, borderColor: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-widest pb-2 mb-3 border-b-2" style={{ color: primaryColor, borderColor: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b-2" style={{ color: primaryColor, borderColor: primaryColor }}>{sectionLabel(type, language)}</h2>
-            {renderSection(type, data, primaryColor, language)}
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-widest pb-2 mb-3 border-b-2" style={{ color: primaryColor, borderColor: primaryColor }}>{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -387,57 +430,59 @@ export function ModernTemplate({ data, primaryColor, fontFamily, fontSize, langu
   const mainItems = mainSections.filter((s) => sections.includes(s));
 
   return (
-    <div className="w-full max-w-lg mx-auto flex flex-col md:flex-row" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Sidebar - becomes top banner on mobile */}
-      <div className="w-full md:w-[35%] text-white p-4 sm:p-5" style={{ backgroundColor: primaryColor }}>
+    <div className="w-full flex flex-col sm:flex-row" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Sidebar */}
+      <div className="w-full sm:w-[38%] text-white p-5 sm:p-6" style={{ background: `linear-gradient(180deg, ${primaryColor}, ${darken(primaryColor, 15)})` }}>
         <div className="flex flex-col items-center text-center">
-          {p.photo && (
-            <div className="mb-3">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white/40">
+          {p.photo ? (
+            <div className="mb-4">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-3 border-white/30 shadow-lg">
                 <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
               </div>
             </div>
+          ) : (
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/20 flex items-center justify-center mb-4">
+              <span className="text-2xl sm:text-3xl font-bold text-white/80">{p.fullName ? p.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) : '?'}</span>
+            </div>
           )}
           <h1 className="text-base sm:text-lg font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-          <p className="text-xs sm:text-sm opacity-85 mt-0.5">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+          <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
         </div>
 
-        {/* Contact */}
-        <div className="mt-4 pt-3 border-t border-white/20">
-          <h3 className="text-xs font-bold uppercase tracking-wider mb-2">{language === 'ar' ? 'معلومات التواصل' : 'Contact'}</h3>
-          <div className="space-y-1.5 text-[10px] sm:text-xs">
-            {p.email && <div className="flex items-center gap-1.5"><Mail size={11} /><span className="break-all">{p.email}</span></div>}
-            {p.phone && <div className="flex items-center gap-1.5"><Phone size={11} />{p.phone}</div>}
-            {(p.city || p.country) && <div className="flex items-center gap-1.5"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</div>}
-            {p.website && <div className="flex items-center gap-1.5"><Globe size={11} /><span className="break-all">{p.website}</span></div>}
-            {p.linkedin && <div className="flex items-center gap-1.5"><Linkedin size={11} /><span className="break-all">{p.linkedin}</span></div>}
-            {p.github && <div className="flex items-center gap-1.5"><Github size={11} /><span className="break-all">{p.github}</span></div>}
+        <div className="mt-5 pt-4 border-t border-white/20">
+          <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 opacity-70">{language === 'ar' ? 'معلومات التواصل' : 'Contact'}</h3>
+          <div className="space-y-2 text-[10px] sm:text-xs">
+            {p.email && <div className="flex items-center gap-2"><Mail size={12} className="shrink-0" /><span className="break-all">{p.email}</span></div>}
+            {p.phone && <div className="flex items-center gap-2"><Phone size={12} className="shrink-0" />{p.phone}</div>}
+            {(p.city || p.country) && <div className="flex items-center gap-2"><MapPin size={12} className="shrink-0" />{[p.city, p.country].filter(Boolean).join(', ')}</div>}
+            {p.website && <div className="flex items-center gap-2"><Globe size={12} className="shrink-0" /><span className="break-all">{p.website}</span></div>}
+            {p.linkedin && <div className="flex items-center gap-2"><Linkedin size={12} className="shrink-0" /><span className="break-all">{p.linkedin}</span></div>}
+            {p.github && <div className="flex items-center gap-2"><Github size={12} className="shrink-0" /><span className="break-all">{p.github}</span></div>}
           </div>
         </div>
 
-        {/* Sidebar sections */}
         {sidebarItems.map((type) => (
-          <div key={type} className="mt-4 pt-3 border-t border-white/20">
-            <h3 className="text-xs font-bold uppercase tracking-wider mb-2">{sectionLabel(type, language)}</h3>
+          <div key={type} className="mt-5 pt-4 border-t border-white/20">
+            <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 opacity-70">{sectionLabel(type, language)}</h3>
             {type === 'skills' && (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {data.skills.map((sk) => (
                   <div key={sk.id}>
-                    <div className="flex justify-between text-[10px] sm:text-xs mb-1"><span>{sk.name}</span><span className="opacity-70">{SKILL_LEVEL_LABELS[language][sk.level]}</span></div>
-                    <div className="h-1.5 rounded-full bg-white/20 overflow-hidden"><div className="h-full rounded-full bg-white/85" style={{ width: getSkillWidth(sk.level) }} /></div>
+                    <div className="flex justify-between text-[10px] sm:text-xs mb-1"><span>{sk.name}</span><span className="opacity-60">{SKILL_LEVEL_LABELS[language][sk.level]}</span></div>
+                    <div className="h-1.5 rounded-full bg-white/20 overflow-hidden"><div className="h-full rounded-full bg-white/80" style={{ width: getSkillWidth(sk.level) }} /></div>
                   </div>
                 ))}
               </div>
             )}
             {type === 'certifications' && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {data.certifications.map((c) => (
-                  <div key={c.id} className="text-[10px] sm:text-xs"><div className="font-semibold">{c.name}</div><div className="opacity-70">{c.issuer}{c.date ? ` · ${c.date}` : ''}</div></div>
+                  <div key={c.id} className="text-[10px] sm:text-xs"><div className="font-semibold">{c.name}</div><div className="opacity-60 mt-0.5">{c.issuer}{c.date ? ` · ${c.date}` : ''}</div></div>
                 ))}
               </div>
             )}
             {type === 'languages' && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {data.languages.map((l) => {
                   const filled = getLanguageDots(l.level);
                   return (
@@ -454,11 +499,11 @@ export function ModernTemplate({ data, primaryColor, fontFamily, fontSize, langu
       </div>
 
       {/* Main content */}
-      <div className="flex-1 p-4 sm:p-5 space-y-4">
+      <div className="flex-1 p-5 sm:p-6 space-y-5">
         {p.summary && (
           <div>
-            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-2">
-              <span className="w-1 h-4 rounded" style={{ backgroundColor: primaryColor }} />
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3">
+              <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
               {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
@@ -466,8 +511,8 @@ export function ModernTemplate({ data, primaryColor, fontFamily, fontSize, langu
         )}
         {mainItems.map((type) => (
           <div key={type}>
-            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-2">
-              <span className="w-1 h-4 rounded" style={{ backgroundColor: primaryColor }} />
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3">
+              <span className="w-1.5 h-5 rounded-full" style={{ backgroundColor: primaryColor }} />
               {sectionLabel(type, language)}
             </h2>
             {renderSection(type, data, primaryColor, language)}
@@ -486,45 +531,54 @@ export function ExecutiveTemplate({ data, primaryColor, fontFamily, fontSize, la
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const yrs = computeYears(data.experience);
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Bold color banner */}
-      <div className="px-5 sm:px-6 py-5 sm:py-6 text-white relative" style={{ backgroundColor: primaryColor }}>
-        <h1 className="text-xl sm:text-2xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-        <p className="text-sm sm:text-base font-light opacity-90 mt-1 tracking-wide">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs sm:text-sm opacity-85">
-          {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
-          {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
-          {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
-          {p.website && <span className="flex items-center gap-1"><Globe size={11} />{p.website}</span>}
-        </div>
-        <div className="absolute bottom-0 inset-x-0 h-1 bg-white/30" />
-      </div>
-
-      {/* Photo floating */}
-      {p.photo && (
-        <div className="px-5 sm:px-6 -mt-8 flex justify-end">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-3 border-white shadow-lg" style={{ borderColor: primaryColor }}>
-            <img src={p.photo} alt="" className="w-full h-full object-cover" />
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Premium gradient banner */}
+      <div className="relative px-6 sm:px-8 py-6 sm:py-8 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${darken(primaryColor, 20)})` }}>
+        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative flex items-center gap-4 sm:gap-5">
+          {p.photo && (
+            <div className="shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-3 shadow-xl" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-sm sm:text-base font-light opacity-90 mt-1 tracking-wide">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs sm:text-sm opacity-85">
+              {p.email && <span className="flex items-center gap-1"><Mail size={12} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={12} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={12} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+            </div>
           </div>
         </div>
-      )}
+        {/* Stats strip */}
+        <div className="flex gap-4 mt-5 pt-4 border-t border-white/20">
+          {yrs > 0 && <div className="text-center"><div className="text-lg sm:text-xl font-extrabold">{yrs}+</div><div className="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'سنوات خبرة' : 'Years Exp'}</div></div>}
+          {data.experience.length > 0 && <div className="text-center"><div className="text-lg sm:text-xl font-extrabold">{data.experience.length}</div><div className="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'وظائف' : 'Positions'}</div></div>}
+          {data.certifications.length > 0 && <div className="text-center"><div className="text-lg sm:text-xl font-extrabold">{data.certifications.length}</div><div className="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'شهادات' : 'Certs'}</div></div>}
+          {data.skills.length > 0 && <div className="text-center"><div className="text-lg sm:text-xl font-extrabold">{data.skills.length}</div><div className="text-[9px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'مهارات' : 'Skills'}</div></div>}
+        </div>
+      </div>
 
-      {/* Summary */}
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+        <div className="px-6 sm:px-8 pt-5">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-2 mb-3 border-b-2" style={{ color: primaryColor, borderColor: primaryColor + '30' }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{sectionLabel(type, language)}</h2>
-            {renderSection(type, data, primaryColor, language)}
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-2 mb-3 border-b-2" style={{ color: primaryColor, borderColor: primaryColor + '30' }}>{sectionLabel(type, language)}</h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -542,54 +596,80 @@ export function CreativeTemplate({ data, primaryColor, fontFamily, fontSize, lan
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto relative overflow-hidden" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+    <div className="w-full relative overflow-hidden" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
       {/* Geometric corner accent */}
-      <div className="absolute top-0 w-24 h-24 sm:w-32 sm:h-32 opacity-15" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: 0, clipPath: isR ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)' }} />
-      <div className="absolute top-0 w-16 h-16 sm:w-20 sm:h-20" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: 0, clipPath: isR ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)' }} />
+      <div className="absolute top-0 w-28 h-28 sm:w-36 sm:h-36 opacity-10" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: 0, clipPath: isR ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)' }} />
+      <div className="absolute top-0 w-18 h-18 sm:w-24 sm:h-24 opacity-20" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: 0, clipPath: isR ? 'polygon(0 0, 100% 0, 0 100%)' : 'polygon(100% 0, 0 0, 100% 100%)' }} />
+      {/* Circle accent */}
+      <div className="absolute top-16 w-8 h-8 sm:w-12 sm:h-12 rounded-full opacity-10" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: '40px' }} />
 
-      {/* Header */}
-      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 relative">
-        <div className="flex items-center gap-3 sm:gap-4">
+      {/* Header with gradient ring */}
+      <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4 relative">
+        <div className="flex items-center gap-4 sm:gap-5">
           {p.photo && (
-            <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}60)` }}>
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white dark:border-gray-900">
+            <div className="rounded-full p-1 shrink-0" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}60, ${primaryColor})` }}>
+              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2 border-white dark:border-gray-900">
                 <img src={p.photo} alt="" className="w-full h-full object-cover" />
               </div>
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="mt-2"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-sm sm:text-base font-semibold mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
           </div>
         </div>
       </div>
 
       {/* Gradient divider */}
-      <div className="mx-4 sm:mx-6 h-1 rounded-full" style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60, ${primaryColor}10)` }} />
+      <div className="mx-5 sm:mx-8 h-1 rounded-full" style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60, ${primaryColor}10)` }} />
 
-      {/* Summary */}
       {p.summary && (
-        <div className="px-4 sm:px-6 pt-4">
-          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>
-            <span className="w-5 h-1 rounded" style={{ backgroundColor: primaryColor }} />
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+            <Sparkles size={14} />
             {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
           </h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Sections */}
-      <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>
-              <span className="w-5 h-1 rounded" style={{ backgroundColor: primaryColor }} />
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+              {sectionIcon(type)}
               {sectionLabel(type, language)}
             </h2>
-            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
+            {type === 'skills' ? (
+              <div className="flex flex-wrap gap-2">
+                {data.skills.map((sk) => (
+                  <span key={sk.id} className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc)` }}>
+                    {sk.name}
+                  </span>
+                ))}
+              </div>
+            ) : type === 'projects' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {data.projects.map((proj) => (
+                  <div key={proj.id} className="rounded-xl border-2 p-3 sm:p-4" style={{ borderColor: primaryColor + '20', background: `linear-gradient(135deg, ${primaryColor}08, ${primaryColor}03)` }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-xs sm:text-sm font-bold">{proj.name}</h4>
+                      {proj.url && <ExternalLink size={12} style={{ color: primaryColor }} className="shrink-0" />}
+                    </div>
+                    {proj.description && <p className="text-[11px] sm:text-xs text-gray-500 mt-1.5 leading-relaxed">{proj.description}</p>}
+                    {proj.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {proj.technologies.map((t) => (
+                          <span key={t} className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-medium text-white" style={{ backgroundColor: primaryColor + '90' }}>{t}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+              renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -607,30 +687,31 @@ export function MinimalTemplate({ data, primaryColor, fontFamily, fontSize, lang
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      <div className="px-6 sm:px-8 pt-8 sm:pt-10 pb-4">
-        <h1 className="text-xl sm:text-2xl font-light tracking-widest text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-        <p className="text-xs sm:text-sm font-normal mt-1 tracking-wider" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-        <div className="h-px bg-gray-200 dark:bg-gray-700 mt-3 mb-2" />
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      <div className="px-8 sm:px-12 pt-10 sm:pt-12 pb-5">
+        <h1 className="text-2xl sm:text-3xl font-light tracking-[0.15em] text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        <p className="text-sm sm:text-base font-normal mt-2 tracking-wider" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        <div className="h-px mt-4 mb-3" style={{ backgroundColor: primaryColor + '30' }} />
         <ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} />
       </div>
 
       {p.summary && (
-        <div className="px-6 sm:px-8 pt-2">
-          <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+        <div className="px-8 sm:px-12 pt-3">
+          <h2 className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-6 sm:px-8 pb-8 sm:pb-10 space-y-5 pt-3">
+      <div className="px-8 sm:px-12 pb-10 sm:pb-12 space-y-6 pt-5">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-2" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
+            <h2 className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
             {type === 'skills' ? (
-              <div className="flex flex-wrap gap-x-2 gap-y-1">
-                {data.skills.map((sk) => <span key={sk.id} className="text-xs sm:text-sm text-gray-600">{sk.name}<span className="text-gray-300 ms-1">·</span></span>)}
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                {data.skills.map((sk) => <span key={sk.id} className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{sk.name}<span className="mx-1" style={{ color: primaryColor + '60' }}>·</span></span>)}
               </div>
-            ) : renderSection(type, data, primaryColor, language)}
+            ) : type === 'languages' ? <LanguageList data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -648,41 +729,49 @@ export function CorporateTemplate({ data, primaryColor, fontFamily, fontSize, la
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Top bar */}
-      <div className="h-1.5" style={{ backgroundColor: primaryColor }} />
-      <div className="flex">
-        {/* Side accent */}
-        <div className="w-1 shrink-0" style={{ backgroundColor: primaryColor }} />
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 flex items-center gap-3 sm:gap-4">
-            {p.photo && <Avatar photo={p.photo} name={p.fullName} color={primaryColor} size="sm" />}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-              <p className="text-xs sm:text-sm font-medium" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-              <div className="mt-1.5"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Top accent bar */}
+      <div className="h-2" style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}80)` }} />
+
+      {/* Header */}
+      <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-4 flex items-center gap-4 sm:gap-5">
+        {p.photo && (
+          <div className="shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shadow-md border-2" style={{ borderColor: primaryColor + '30' }}>
+              <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
             </div>
           </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+          <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+          <div className="mt-2"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+        </div>
+      </div>
 
-          {/* Summary */}
-          {p.summary && (
-            <div className="px-4 sm:px-6 pt-2">
-              <h2 className="inline-block text-xs sm:text-sm font-bold uppercase text-white px-2.5 py-1 rounded mb-2" style={{ backgroundColor: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-            </div>
-          )}
-
-          {/* Sections */}
-          <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-2">
-            {sections.map((type) => (
-              <div key={type} className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3 sm:p-4 border-s-2" style={{ borderStartColor: primaryColor }}>
-                <h2 className="inline-block text-xs sm:text-sm font-bold uppercase text-white px-2.5 py-1 rounded mb-2" style={{ backgroundColor: primaryColor }}>{sectionLabel(type, language)}</h2>
-                {renderSection(type, data, primaryColor, language)}
-              </div>
-            ))}
+      {p.summary && (
+        <div className="px-5 sm:px-8 pt-2">
+          <div className="rounded-lg p-3 sm:p-4 border-s-4" style={{ borderInlineStartColor: primaryColor, backgroundColor: primaryColor + '08' }}>
+            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
           </div>
         </div>
+      )}
+
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
+        {sections.map((type) => (
+          <div key={type} className="rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 overflow-hidden">
+            <div className="px-3 sm:px-4 py-2 flex items-center gap-2" style={{ backgroundColor: primaryColor + '10', borderBottom: `2px solid ${primaryColor}20` }}>
+              <div style={{ color: primaryColor }}>{sectionIcon(type)}</div>
+              <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
+            </div>
+            <div className="p-3 sm:p-4">
+              {type === 'skills' ? <SkillBadges data={data} color={primaryColor} lang={language} /> :
+               type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+               renderSection(type, data, primaryColor, language)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -698,35 +787,34 @@ export function ATSTemplate({ data, primaryColor, fontFamily, fontSize, language
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Centered header - no graphics */}
-      <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 text-center">
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      <div className="px-6 sm:px-10 pt-6 sm:pt-8 pb-4 text-center">
         <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
         <p className="text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-xs sm:text-sm text-gray-500">
           {p.email && <span>{p.email}</span>}
-          {p.phone && <span>{p.phone}</span>}
-          {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
-          {p.website && <span>{p.website}</span>}
-          {p.linkedin && <span>{p.linkedin}</span>}
-          {p.github && <span>{p.github}</span>}
+          {p.phone && <span>· {p.phone}</span>}
+          {(p.city || p.country) && <span>· {[p.city, p.country].filter(Boolean).join(', ')}</span>}
+          {p.website && <span>· {p.website}</span>}
+          {p.linkedin && <span>· {p.linkedin}</span>}
+          {p.github && <span>· {p.github}</span>}
         </div>
       </div>
-      <div className="h-px bg-gray-900 dark:bg-gray-100 mx-6 sm:mx-8" />
+      <div className="h-px bg-gray-900 dark:bg-gray-100 mx-6 sm:mx-10" />
 
       {p.summary && (
-        <div className="px-6 sm:px-8 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-1.5">{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+        <div className="px-6 sm:px-10 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2">{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-3">
+      <div className="px-6 sm:px-10 pb-6 sm:pb-8 space-y-4 pt-4">
         {sections.map((type) => (
           <div key={type}>
             <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white pb-1 mb-2 border-b border-gray-900 dark:border-gray-100">{sectionLabel(type, language)}</h2>
             {type === 'skills' ? (
-              <p className="text-xs sm:text-sm text-gray-700">{data.skills.map((sk, i) => <span key={sk.id}>{sk.name}{i < data.skills.length - 1 ? ' | ' : ''}</span>)}</p>
+              <p className="text-xs sm:text-sm text-gray-700">{data.skills.map((sk, i) => <span key={sk.id}>{sk.name} ({SKILL_LEVEL_LABELS[language][sk.level]}){i < data.skills.length - 1 ? ' | ' : ''}</span>)}</p>
             ) : type === 'languages' ? (
               <p className="text-xs sm:text-sm text-gray-700">{data.languages.map((l, i) => <span key={l.id}>{l.name}: {LANGUAGE_LEVEL_LABELS[language][l.level]}{i < data.languages.length - 1 ? ' | ' : ''}</span>)}</p>
             ) : renderSection(type, data, primaryColor, language)}
@@ -747,47 +835,48 @@ export function MedicalTemplate({ data, primaryColor, fontFamily, fontSize, lang
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Medical header */}
-      <div className="px-5 sm:px-6 py-5 text-white relative overflow-hidden" style={{ backgroundColor: primaryColor }}>
-        {/* Medical cross motif */}
-        <div className="absolute top-2 opacity-10" style={{ [isR ? 'left' : 'right']: '16px' }}>
-          <div className="relative w-16 h-16">
-            <div className="absolute top-1/2 left-0 w-full h-4 bg-white rounded -translate-y-1/2" />
-            <div className="absolute left-1/2 top-0 h-full w-4 bg-white rounded -translate-x-1/2" />
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Medical header with cross motif */}
+      <div className="relative px-5 sm:px-8 py-5 sm:py-6 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${darken(primaryColor, 15)})` }}>
+        <div className="absolute opacity-10" style={{ top: '-8px', [isR ? 'left' : 'right']: '12px' }}>
+          <div className="relative w-20 h-20">
+            <div className="absolute top-1/2 left-0 w-full h-5 bg-white rounded -translate-y-1/2" />
+            <div className="absolute left-1/2 top-0 h-full w-5 bg-white rounded -translate-x-1/2" />
           </div>
         </div>
-        <div className="flex items-center gap-3 sm:gap-4 relative">
+        <div className="flex items-center gap-4 sm:gap-5 relative">
           {p.photo && (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white/40 shrink-0">
+            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
               <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
           <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm opacity-90 mt-0.5">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs opacity-85">
-              {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
-              {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
-              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+            <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
+              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
             </div>
           </div>
         </div>
+        <div className="absolute bottom-0 inset-x-0 h-1.5 bg-white/20" />
       </div>
 
-      <div className="h-1" style={{ backgroundColor: primaryColor, opacity: 0.3 }} />
-
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>
+            <Shield size={14} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{sectionLabel(type, language)}</h2>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider pb-2 mb-3 border-b" style={{ color: primaryColor, borderColor: primaryColor + '30' }}>{sectionLabel(type, language)}</h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
              type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
@@ -808,24 +897,24 @@ export function EngineeringTemplate({ data, primaryColor, fontFamily, fontSize, 
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Blueprint header */}
-      <div className="bg-gray-900 dark:bg-black px-5 sm:px-6 py-5 relative overflow-hidden">
-        {/* Grid pattern */}
-        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-        <div className="flex items-center gap-3 sm:gap-4 relative">
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Blueprint dark header */}
+      <div className="px-5 sm:px-8 py-5 sm:py-6 relative overflow-hidden" style={{ backgroundColor: '#1a1a2e' }}>
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        <div className="flex items-center gap-4 sm:gap-5 relative">
           {p.photo && (
-            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded overflow-hidden border-2 shrink-0" style={{ borderColor: primaryColor }}>
+            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-lg overflow-hidden border-2 shrink-0" style={{ borderColor: primaryColor }}>
               <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
           <div className="min-w-0 flex-1 text-white">
             <h1 className="text-lg sm:text-xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm font-mono mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs text-gray-400">
-              {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
-              {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
-              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+            <p className="text-xs sm:text-sm font-mono mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
+              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+              {p.github && <span className="flex items-center gap-1"><Github size={11} />{p.github}</span>}
             </div>
           </div>
         </div>
@@ -833,19 +922,19 @@ export function EngineeringTemplate({ data, primaryColor, fontFamily, fontSize, 
       </div>
 
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2">
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
             <span className="w-2 h-2 rotate-45 shrink-0" style={{ backgroundColor: primaryColor }} />
             {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line ps-4 border-s-2" style={{ borderStartColor: primaryColor + '30' }}>{p.summary}</p>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line ps-4 border-s-2" style={{ borderInlineStartColor: primaryColor + '30' }}>{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2">
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
               <span className="w-2 h-2 rotate-45 shrink-0" style={{ backgroundColor: primaryColor }} />
               {sectionLabel(type, language)}
             </h2>
@@ -867,42 +956,43 @@ export function AcademicTemplate({ data, primaryColor, fontFamily, fontSize, lan
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const serifFont = '"Playfair Display", Georgia, serif';
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Centered header, no photo */}
-      <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 text-center border-b-2" style={{ borderColor: primaryColor }}>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-        {p.jobTitle && <p className="text-sm sm:text-base italic mt-1" style={{ color: primaryColor }}>{p.jobTitle}</p>}
-        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-xs sm:text-sm text-gray-500">
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Centered header - publication style */}
+      <div className="px-6 sm:px-10 pt-6 sm:pt-8 pb-4 text-center border-b-2" style={{ borderColor: primaryColor }}>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: serifFont }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        {p.jobTitle && <p className="text-sm sm:text-base italic mt-1" style={{ color: primaryColor, fontFamily: serifFont }}>{p.jobTitle}</p>}
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 text-xs sm:text-sm text-gray-500">
           {p.email && <span>{p.email}</span>}
-          {p.phone && <span>{p.phone}</span>}
-          {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
-          {p.website && <span>{p.website}</span>}
-          {p.linkedin && <span>{p.linkedin}</span>}
+          {p.phone && <span>· {p.phone}</span>}
+          {(p.city || p.country) && <span>· {[p.city, p.country].filter(Boolean).join(', ')}</span>}
+          {p.website && <span>· {p.website}</span>}
+          {p.linkedin && <span>· {p.linkedin}</span>}
         </div>
       </div>
 
       {p.summary && (
-        <div className="px-6 sm:px-8 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-center mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Research Interests & Summary'}</h2>
+        <div className="px-6 sm:px-10 pt-5">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-center mb-3" style={{ color: primaryColor, fontFamily: serifFont }}>{language === 'ar' ? 'نبذة احترافية' : 'Research Interests & Summary'}</h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line text-justify">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-3">
+      <div className="px-6 sm:px-10 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-2 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40' }}>{sectionLabel(type, language)}</h2>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider pb-1.5 mb-3 border-b" style={{ color: primaryColor, borderColor: primaryColor + '40', fontFamily: serifFont }}>{sectionLabel(type, language)}</h2>
             {type === 'skills' ? (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                {data.skills.map((sk) => <div key={sk.id} className="text-xs sm:text-sm text-gray-600 ps-3">• {sk.name}</div>)}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {data.skills.map((sk) => <div key={sk.id} className="text-xs sm:text-sm text-gray-600 ps-3 flex items-center gap-1.5"><span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: primaryColor }} />{sk.name}</div>)}
               </div>
             ) : type === 'projects' ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {data.projects.map((proj) => (
                   <div key={proj.id}>
-                    <h4 className="text-xs sm:text-sm font-bold italic">{proj.name}</h4>
+                    <h4 className="text-xs sm:text-sm font-bold italic" style={{ fontFamily: serifFont }}>{proj.name}</h4>
                     {proj.description && <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">{proj.description}</p>}
                     {proj.technologies.length > 0 && <p className="text-[10px] sm:text-xs text-gray-400 italic mt-0.5">Keywords: {proj.technologies.join(', ')}</p>}
                   </div>
@@ -924,24 +1014,24 @@ export function ElegantTemplate({ data, primaryColor, fontFamily, fontSize, lang
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const serifFont = '"Playfair Display", Georgia, serif';
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Gradient header */}
-      <div className="relative px-5 sm:px-6 py-5 sm:py-6 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc, ${primaryColor}88)` }}>
-        {/* Decorative circles */}
-        <div className="absolute -top-8 w-24 h-24 sm:w-32 sm:h-32 rounded-full border border-white/10" style={{ [isR ? 'left' : 'right']: '-20px' }} />
-        <div className="absolute -top-3 w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-white/8" style={{ [isR ? 'left' : 'right']: '-5px' }} />
-        <div className="flex items-center gap-3 sm:gap-4 relative">
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Gradient header with decorative circles */}
+      <div className="relative px-6 sm:px-8 py-6 sm:py-8 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc, ${darken(primaryColor, 10)})` }}>
+        <div className="absolute -top-8 w-28 h-28 sm:w-36 sm:h-36 rounded-full border border-white/10" style={{ [isR ? 'left' : 'right']: '-20px' }} />
+        <div className="absolute -top-2 w-16 h-16 sm:w-22 sm:h-22 rounded-full border border-white/8" style={{ [isR ? 'left' : 'right']: '-5px' }} />
+        <div className="flex items-center gap-4 sm:gap-5 relative">
           {p.photo && (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white/50 shadow-lg shrink-0">
+            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2 shadow-lg shrink-0" style={{ borderColor: 'rgba(255,255,255,0.5)' }}>
               <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-bold" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm font-light opacity-90 mt-0.5 tracking-wide">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs opacity-85">
+            <h1 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: serifFont }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-xs sm:text-sm font-light opacity-90 mt-1 tracking-wide">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
               {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
               {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
               {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
@@ -951,8 +1041,8 @@ export function ElegantTemplate({ data, primaryColor, fontFamily, fontSize, lang
       </div>
 
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif', color: primaryColor }}>
+        <div className="px-6 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-3 text-sm sm:text-base font-bold mb-3" style={{ fontFamily: serifFont, color: primaryColor }}>
             {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
             <span className="flex-1 h-px" style={{ backgroundColor: primaryColor + '30' }} />
           </h2>
@@ -960,10 +1050,10 @@ export function ElegantTemplate({ data, primaryColor, fontFamily, fontSize, lang
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif', color: primaryColor }}>
+            <h2 className="flex items-center gap-3 text-sm sm:text-base font-bold mb-3" style={{ fontFamily: serifFont, color: primaryColor }}>
               {sectionLabel(type, language)}
               <span className="flex-1 h-px" style={{ backgroundColor: primaryColor + '30' }} />
             </h2>
@@ -985,47 +1075,52 @@ export function PremiumDarkTemplate({ data, primaryColor, fontFamily, fontSize, 
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const bgMain = '#0f0f1a';
+  const bgCard = '#1a1a2e';
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-[#1a1a2e] text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Header */}
-      <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4">
-        <div className="flex items-center gap-3 sm:gap-4">
+    <div className="w-full text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily), backgroundColor: bgMain }}>
+      <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4">
+        <div className="flex items-center gap-4 sm:gap-5">
           {p.photo && (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: primaryColor, boxShadow: `0 0 12px ${primaryColor}40` }}>
-              <img src={p.photo} alt="" className="w-full h-full object-cover" />
+            <div className="shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2" style={{ borderColor: primaryColor, boxShadow: `0 0 20px ${primaryColor}40` }}>
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <h1 className="text-xl sm:text-2xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-sm sm:text-base mt-1 font-medium" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
-          {p.email && <span className="flex items-center gap-1"><Mail size={11} style={{ color: primaryColor + '80' }} />{p.email}</span>}
-          {p.phone && <span className="flex items-center gap-1"><Phone size={11} style={{ color: primaryColor + '80' }} />{p.phone}</span>}
-          {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} style={{ color: primaryColor + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 text-[10px] sm:text-xs text-gray-400">
+          {p.email && <span className="flex items-center gap-1.5"><Mail size={12} style={{ color: primaryColor + '80' }} />{p.email}</span>}
+          {p.phone && <span className="flex items-center gap-1.5"><Phone size={12} style={{ color: primaryColor + '80' }} />{p.phone}</span>}
+          {(p.city || p.country) && <span className="flex items-center gap-1.5"><MapPin size={12} style={{ color: primaryColor + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+          {p.github && <span className="flex items-center gap-1.5"><Github size={12} style={{ color: primaryColor + '80' }} />{p.github}</span>}
+          {p.linkedin && <span className="flex items-center gap-1.5"><Linkedin size={12} style={{ color: primaryColor + '80' }} />{p.linkedin}</span>}
         </div>
       </div>
 
       {/* Glow divider */}
-      <div className="mx-5 sm:mx-6 h-px" style={{ background: `linear-gradient(90deg, transparent, ${primaryColor}60, transparent)` }} />
+      <div className="mx-5 sm:mx-8 h-px" style={{ background: `linear-gradient(90deg, transparent, ${primaryColor}60, transparent)` }} />
 
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
           <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-4">
         {sections.map((type) => (
-          <div key={type} className="bg-[#16213e] rounded-xl p-3 sm:p-4 border border-white/5">
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
+          <div key={type} className="rounded-xl p-4 sm:p-5 border" style={{ borderColor: primaryColor + '15', backgroundColor: bgCard }}>
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>{sectionLabel(type, language)}</h2>
             {type === 'skills' ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {data.skills.map((sk) => (
-                  <span key={sk.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: primaryColor + '25', color: primaryColor, boxShadow: `0 0 6px ${primaryColor}20` }}>
+                  <span key={sk.id} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border" style={{ borderColor: primaryColor + '30', color: primaryColor, backgroundColor: primaryColor + '15', boxShadow: `0 0 8px ${primaryColor}15` }}>
                     {sk.name}
                   </span>
                 ))}
@@ -1048,25 +1143,26 @@ export function LuxuryTemplate({ data, primaryColor, fontFamily, fontSize, langu
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
   const gold = '#D4A853';
+  const bgDark = '#0a0f1e';
+  const serifFont = '"Playfair Display", Georgia, serif';
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-[#0f1729] text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Luxury header */}
-      <div className="px-5 sm:px-6 pt-6 sm:pt-8 pb-4 text-center">
+    <div className="w-full text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily), backgroundColor: bgDark }}>
+      <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 text-center">
         {p.photo && (
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 mx-auto mb-3" style={{ borderColor: gold, boxShadow: `0 0 16px ${gold}30` }}>
+          <div className="w-22 h-22 sm:w-28 sm:h-28 rounded-full overflow-hidden border-2 mx-auto mb-4" style={{ borderColor: gold, boxShadow: `0 0 24px ${gold}25` }}>
             <img src={p.photo} alt="" className="w-full h-full object-cover" />
           </div>
         )}
-        <h1 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-        <p className="text-xs sm:text-sm font-light mt-1 tracking-widest uppercase" style={{ color: gold }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        <h1 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: serifFont }}>{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+        <p className="text-xs sm:text-sm font-light mt-1.5 tracking-[0.2em] uppercase" style={{ color: gold }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
         {/* Ornamental divider */}
-        <div className="flex items-center gap-2 mt-3 justify-center">
-          <div className="w-8 h-px" style={{ backgroundColor: gold + '40' }} />
-          <div className="w-1.5 h-1.5 rotate-45" style={{ backgroundColor: gold }} />
-          <div className="w-8 h-px" style={{ backgroundColor: gold + '40' }} />
+        <div className="flex items-center gap-3 mt-4 justify-center">
+          <div className="w-12 h-px" style={{ backgroundColor: gold + '40' }} />
+          <div className="w-2 h-2 rotate-45" style={{ backgroundColor: gold }} />
+          <div className="w-12 h-px" style={{ backgroundColor: gold + '40' }} />
         </div>
-        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-4 text-[10px] sm:text-xs text-gray-400">
           {p.email && <span className="flex items-center gap-1"><Mail size={10} style={{ color: gold + '80' }} />{p.email}</span>}
           {p.phone && <span className="flex items-center gap-1"><Phone size={10} style={{ color: gold + '80' }} />{p.phone}</span>}
           {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} style={{ color: gold + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
@@ -1074,24 +1170,22 @@ export function LuxuryTemplate({ data, primaryColor, fontFamily, fontSize, langu
       </div>
 
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-3">
-          <h2 className="flex items-center justify-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif', color: gold }}>
-            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-          </h2>
+        <div className="px-6 sm:px-8 pt-4">
+          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-3 text-center" style={{ fontFamily: serifFont, color: gold }}>{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}</h2>
           <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line text-center">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-3">
+      <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-4 pt-5">
         {sections.map((type) => (
-          <div key={type} className="rounded-xl p-3 sm:p-4 border" style={{ borderColor: gold + '20', backgroundColor: 'rgba(212,168,83,0.04)' }}>
-            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif', color: gold }}>
+          <div key={type} className="rounded-xl p-4 sm:p-5 border" style={{ borderColor: gold + '20', backgroundColor: gold + '06' }}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ fontFamily: serifFont, color: gold }}>
               {sectionLabel(type, language)}
             </h2>
             {type === 'skills' ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {data.skills.map((sk) => (
-                  <span key={sk.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border" style={{ borderColor: gold + '30', color: gold, backgroundColor: gold + '10' }}>
+                  <span key={sk.id} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border" style={{ borderColor: gold + '30', color: gold, backgroundColor: gold + '10' }}>
                     {sk.name}
                   </span>
                 ))}
@@ -1113,27 +1207,38 @@ export function StartupTemplate({ data, primaryColor, fontFamily, fontSize, lang
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const yrs = computeYears(data.experience);
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Vibrant header */}
-      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4" style={{ background: `linear-gradient(135deg, ${primaryColor}20, ${primaryColor}08)` }}>
-        <div className="flex items-center gap-3 sm:gap-4">
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Vibrant gradient header */}
+      <div className="relative px-5 sm:px-8 py-6 sm:py-8 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${primaryColor}05)` }}>
+        <div className="absolute top-0 w-40 h-40 sm:w-56 sm:h-56 rounded-full opacity-10 -translate-y-1/2" style={{ backgroundColor: primaryColor, [isR ? 'left' : 'right']: '-40px' }} />
+        <div className="absolute bottom-0 w-24 h-24 sm:w-32 sm:h-32 rounded-full opacity-8 translate-y-1/2" style={{ backgroundColor: primaryColor, [isR ? 'right' : 'left']: '20px' }} />
+        <div className="flex items-center gap-4 sm:gap-5 relative">
           {p.photo && (
-            <div className="rounded-2xl overflow-hidden border-2 shrink-0 w-14 h-14 sm:w-18 sm:h-18" style={{ borderColor: primaryColor + '30' }}>
-              <img src={p.photo} alt="" className="w-full h-full object-cover" />
+            <div className="shrink-0 rounded-2xl overflow-hidden border-2 shadow-lg" style={{ borderColor: primaryColor + '30' }}>
+              <div className="w-18 h-18 sm:w-22 sm:h-22">
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm font-semibold mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-sm sm:text-base font-semibold mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
           </div>
         </div>
-        <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+        {/* Bold stats */}
+        <div className="flex gap-4 sm:gap-6 mt-5 pt-4 border-t relative" style={{ borderColor: primaryColor + '20' }}>
+          {yrs > 0 && <div className="flex items-center gap-2"><TrendingUp size={16} style={{ color: primaryColor }} /><div><div className="text-lg sm:text-xl font-extrabold" style={{ color: primaryColor }}>{yrs}+</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-wider">{language === 'ar' ? 'سنوات' : 'Years'}</div></div></div>}
+          {data.experience.length > 0 && <div className="flex items-center gap-2"><Briefcase size={16} style={{ color: primaryColor }} /><div><div className="text-lg sm:text-xl font-extrabold" style={{ color: primaryColor }}>{data.experience.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-wider">{language === 'ar' ? 'وظائف' : 'Roles'}</div></div></div>}
+          {data.projects.length > 0 && <div className="flex items-center gap-2"><FolderKanban size={16} style={{ color: primaryColor }} /><div><div className="text-lg sm:text-xl font-extrabold" style={{ color: primaryColor }}>{data.projects.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-wider">{language === 'ar' ? 'مشاريع' : 'Projects'}</div></div></div>}
+        </div>
       </div>
 
       {p.summary && (
-        <div className="px-4 sm:px-6 pt-3">
+        <div className="px-5 sm:px-8 pt-5">
           <SectionCard>
             <SectionHeader icon={<User size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} />
             <div className="px-4 sm:px-5 pb-4 pt-2"><p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p></div>
@@ -1141,27 +1246,21 @@ export function StartupTemplate({ data, primaryColor, fontFamily, fontSize, lang
         </div>
       )}
 
-      <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-3 pt-4">
         {sections.map((type) => (
           <SectionCard key={type}>
-            <SectionHeader icon={
-              type === 'experience' ? <Briefcase size={12} style={{ color: primaryColor }} /> :
-              type === 'education' ? <GraduationCap size={12} style={{ color: primaryColor }} /> :
-              type === 'skills' ? <Zap size={12} style={{ color: primaryColor }} /> :
-              type === 'certifications' ? <Award size={12} style={{ color: primaryColor }} /> :
-              type === 'languages' ? <Globe2 size={12} style={{ color: primaryColor }} /> :
-              <FolderKanban size={12} style={{ color: primaryColor }} />
-            } title={sectionLabel(type, language)} />
+            <SectionHeader icon={<span style={{ color: primaryColor }}>{sectionIcon(type)}</span>} title={sectionLabel(type, language)} />
             <div className="px-4 sm:px-5 pb-4 pt-2">
               {type === 'skills' ? (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {data.skills.map((sk) => (
-                    <span key={sk.id} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: primaryColor + 'cc' }}>
+                    <span key={sk.id} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: primaryColor + 'cc' }}>
                       {sk.name}
                     </span>
                   ))}
                 </div>
-              ) : renderSection(type, data, primaryColor, language)}
+              ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+               renderSection(type, data, primaryColor, language)}
             </div>
           </SectionCard>
         ))}
@@ -1180,42 +1279,51 @@ export function ConsultantTemplate({ data, primaryColor, fontFamily, fontSize, l
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Header with subtle accent */}
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Navy professional header */}
       <div className="flex">
-        <div className="w-1 shrink-0" style={{ backgroundColor: primaryColor + '30' }} />
-        <div className="flex-1 min-w-0 px-5 sm:px-6 pt-5 sm:pt-6 pb-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            {p.photo && <Avatar photo={p.photo} name={p.fullName} color={primaryColor} size="md" />}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-              <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-              <div className="mt-1.5"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+        <div className="w-2 shrink-0" style={{ background: `linear-gradient(180deg, ${primaryColor}, ${darken(primaryColor, 20)})` }} />
+        <div className="flex-1 min-w-0">
+          <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-4">
+            <div className="flex items-center gap-4 sm:gap-5">
+              {p.photo && (
+                <div className="shrink-0">
+                  <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-3 shadow-md" style={{ borderColor: primaryColor + '40' }}>
+                    <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+                <p className="text-sm sm:text-base font-medium mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+                <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="h-px mx-5 sm:mx-6" style={{ backgroundColor: primaryColor + '20' }} />
+      <div className="h-px mx-5 sm:mx-8" style={{ backgroundColor: primaryColor + '20' }} />
 
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-            <span className="w-1 h-4 rounded" style={{ backgroundColor: primaryColor }} />
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
+            <span className="w-1.5 h-5 rounded" style={{ backgroundColor: primaryColor }} />
             {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
           </h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-              <span className="w-1 h-4 rounded" style={{ backgroundColor: primaryColor }} />
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
+              <span className="w-1.5 h-5 rounded" style={{ backgroundColor: primaryColor }} />
               {sectionLabel(type, language)}
             </h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
              renderSection(type, data, primaryColor, language)}
           </div>
         ))}
@@ -1234,28 +1342,28 @@ export function SoftwareTemplate({ data, primaryColor, fontFamily, fontSize, lan
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Code-style dark header */}
-      <div className="bg-gray-900 dark:bg-black px-4 sm:px-6 pt-4 sm:pt-5 pb-3">
-        <div className="flex items-center gap-1.5 mb-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-          <span className="text-[10px] text-gray-500 ms-2 font-mono">resume.tsx</span>
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Terminal-style dark header */}
+      <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-4" style={{ backgroundColor: '#1a1a2e' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#febc2e' }} />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#28c840' }} />
+          <span className="text-[10px] sm:text-xs text-gray-500 ms-2 font-mono">resume.tsx</span>
         </div>
-        <div className="font-mono text-xs sm:text-sm">
-          <span className="text-gray-500">{'// '}</span><span className="text-gray-400">{language === 'ar' ? 'السيرة الذاتية' : 'Resume'}</span>
+        <div className="font-mono text-xs sm:text-sm text-gray-500">
+          <span style={{ color: primaryColor }}>const</span> <span className="text-gray-300">developer</span> <span style={{ color: primaryColor }}>=</span> <span className="text-gray-400">{'{'}</span>
         </div>
-        <div className="mt-2 flex items-center gap-3 sm:gap-4">
+        <div className="mt-3 flex items-center gap-4 sm:gap-5">
           {p.photo && (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border shrink-0" style={{ borderColor: primaryColor + '50' }}>
+            <div className="shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2" style={{ borderColor: primaryColor + '50' }}>
               <img src={p.photo} alt="" className="w-full h-full object-cover" />
             </div>
           )}
           <div className="min-w-0 flex-1">
             <h1 className="text-base sm:text-lg font-extrabold text-white font-mono">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm font-mono mt-0.5" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[10px] sm:text-xs text-gray-400 font-mono">
+            <p className="text-xs sm:text-sm font-mono mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs text-gray-400 font-mono">
               {p.email && <span>{p.email}</span>}
               {p.phone && <span>{p.phone}</span>}
               {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
@@ -1266,32 +1374,33 @@ export function SoftwareTemplate({ data, primaryColor, fontFamily, fontSize, lan
       </div>
 
       {p.summary && (
-        <div className="px-4 sm:px-6 pt-4">
-          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white mb-2">
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white mb-3">
             <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ backgroundColor: primaryColor + '15', color: primaryColor }}>{'>'}</span>
             {language === 'ar' ? 'نبذة احترافية' : 'Summary'}
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5 font-mono">{p.summary}</p>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 font-mono">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-4 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
           <div key={type}>
-            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white mb-2">
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white mb-3">
               <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ backgroundColor: primaryColor + '15', color: primaryColor }}>{'>'}</span>
               {sectionLabel(type, language)}
             </h2>
             {type === 'skills' ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {data.skills.map((sk) => (
-                  <span key={sk.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono border" style={{ borderColor: primaryColor + '30', color: primaryColor, backgroundColor: primaryColor + '08' }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sk.level === 'expert' ? '#22c55e' : sk.level === 'advanced' ? primaryColor : '#94a3b8' }} />
+                  <span key={sk.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono border" style={{ borderColor: primaryColor + '30', color: primaryColor, backgroundColor: primaryColor + '08' }}>
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sk.level === 'expert' ? '#22c55e' : sk.level === 'advanced' ? primaryColor : '#94a3b8' }} />
                     {sk.name}
                   </span>
                 ))}
               </div>
-            ) : renderSection(type, data, primaryColor, language)}
+            ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1307,32 +1416,44 @@ export function NurseTemplate({ data, primaryColor, fontFamily, fontSize, langua
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const yrs = computeYears(data.experience);
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
       {/* Soft caring header */}
-      <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4" style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${primaryColor}05)` }}>
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="relative px-5 sm:px-8 pt-6 sm:pt-8 pb-5 sm:pb-6 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}18, ${primaryColor}08)` }}>
+        {/* Heart motif */}
+        <div className="absolute top-3 opacity-8" style={{ [isR ? 'left' : 'right']: '16px' }}>
+          <Heart size={48} style={{ color: primaryColor }} />
+        </div>
+        <div className="flex items-center gap-4 sm:gap-5 relative">
           {p.photo && (
-            <div className="rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: primaryColor + '30' }}>
-              <div className="w-16 h-16 sm:w-20 sm:h-20">
+            <div className="shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-3 shadow-md" style={{ borderColor: primaryColor + '40' }}>
                 <img src={p.photo} alt="" className="w-full h-full object-cover" />
               </div>
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <Heart size={12} style={{ color: primaryColor }} />
-              <p className="text-xs sm:text-sm font-medium" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Heart size={14} style={{ color: primaryColor }} />
+              <p className="text-sm sm:text-base font-semibold" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
             </div>
-            <div className="mt-2"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
+            <div className="mt-3"><ContactRow info={p} color={primaryColor} lang={language} size={fontSizeBase(fontSize)} /></div>
           </div>
+        </div>
+
+        {/* Stats bar */}
+        <div className="flex gap-3 sm:gap-4 mt-5 pt-4 border-t relative" style={{ borderColor: primaryColor + '20' }}>
+          {yrs > 0 && <div className="flex-1 rounded-xl p-2.5 sm:p-3 text-center" style={{ backgroundColor: primaryColor + '10' }}><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{yrs}+</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'سنوات خبرة' : 'Years Exp'}</div></div>}
+          {data.certifications.length > 0 && <div className="flex-1 rounded-xl p-2.5 sm:p-3 text-center" style={{ backgroundColor: primaryColor + '10' }}><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{data.certifications.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'شهادات' : 'Certs'}</div></div>}
+          {data.languages.length > 0 && <div className="flex-1 rounded-xl p-2.5 sm:p-3 text-center" style={{ backgroundColor: primaryColor + '10' }}><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{data.languages.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'لغات' : 'Langs'}</div></div>}
         </div>
       </div>
 
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-3">
+        <div className="px-5 sm:px-8 pt-4">
           <SectionCard>
             <SectionHeader icon={<Heart size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'} />
             <div className="px-4 sm:px-5 pb-4 pt-2"><p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p></div>
@@ -1340,23 +1461,17 @@ export function NurseTemplate({ data, primaryColor, fontFamily, fontSize, langua
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-3 pt-4">
         {sections.map((type) => (
-          <SectionCard key={type}>
-            <SectionHeader icon={
-              type === 'experience' ? <Briefcase size={12} style={{ color: primaryColor }} /> :
-              type === 'education' ? <GraduationCap size={12} style={{ color: primaryColor }} /> :
-              type === 'skills' ? <Heart size={12} style={{ color: primaryColor }} /> :
-              type === 'certifications' ? <Award size={12} style={{ color: primaryColor }} /> :
-              type === 'languages' ? <Globe2 size={12} style={{ color: primaryColor }} /> :
-              <FolderKanban size={12} style={{ color: primaryColor }} />
-            } title={sectionLabel(type, language)} />
-            <div className="px-4 sm:px-5 pb-4 pt-2">
-              {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
-               type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-               renderSection(type, data, primaryColor, language)}
-            </div>
-          </SectionCard>
+          <div key={type} className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: primaryColor + '20', backgroundColor: primaryColor + '04' }}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+              <Heart size={12} />
+              {sectionLabel(type, language)}
+            </h2>
+            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
+          </div>
         ))}
       </div>
     </div>
@@ -1364,72 +1479,109 @@ export function NurseTemplate({ data, primaryColor, fontFamily, fontSize, langua
 }
 
 /* ============================================================================ */
-/*   18. HEALTHCARE TEMPLATE - "الرعاية الصحية"                                */
+/*   18. HEALTHCARE TEMPLATE - "أخصائي صحي"                                    */
 /* ============================================================================ */
 
 export function HealthcareTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const sideSections = ['skills', 'certifications', 'languages'];
+  const mainSections = ['experience', 'education', 'projects'];
+  const sidebarItems = sideSections.filter((s) => sections.includes(s));
+  const mainItems = mainSections.filter((s) => sections.includes(s));
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Clinical header */}
-      <div className="text-white px-5 sm:px-6 py-4 sm:py-5" style={{ backgroundColor: primaryColor }}>
-        <div className="flex items-center gap-3 sm:gap-4">
-          {p.photo && (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-white/40 shrink-0">
-              <img src={p.photo} alt="" className="w-full h-full object-cover" />
+    <div className="w-full flex flex-col sm:flex-row" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Teal sidebar */}
+      <div className="w-full sm:w-[38%] p-5 sm:p-6" style={{ background: `linear-gradient(180deg, ${primaryColor}, ${darken(primaryColor, 15)})` }}>
+        <div className="flex flex-col items-center text-center text-white">
+          {/* Medical cross icon */}
+          <div className="mb-3 w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+            <Shield size={20} />
+          </div>
+          {p.photo ? (
+            <div className="mb-3">
+              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
+                <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
+              </div>
+            </div>
+          ) : (
+            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-white/20 flex items-center justify-center mb-3">
+              <span className="text-xl font-bold text-white/80">{p.fullName ? p.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) : '?'}</span>
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-base sm:text-lg font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm opacity-90 mt-0.5">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+          <h1 className="text-base sm:text-lg font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+          <p className="text-xs sm:text-sm opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-white/20">
+          <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 opacity-70">{language === 'ar' ? 'معلومات التواصل' : 'Contact'}</h3>
+          <div className="space-y-2 text-[10px] sm:text-xs">
+            {p.email && <div className="flex items-center gap-2"><Mail size={11} className="shrink-0" /><span className="break-all">{p.email}</span></div>}
+            {p.phone && <div className="flex items-center gap-2"><Phone size={11} className="shrink-0" />{p.phone}</div>}
+            {(p.city || p.country) && <div className="flex items-center gap-2"><MapPin size={11} className="shrink-0" />{[p.city, p.country].filter(Boolean).join(', ')}</div>}
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] sm:text-xs opacity-85">
-          {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
-          {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
-          {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
-        </div>
-      </div>
 
-      {/* Stats bar */}
-      <div className="grid grid-cols-3 gap-px" style={{ backgroundColor: primaryColor + '20' }}>
-        {[
-          { icon: <Briefcase size={14} style={{ color: primaryColor }} />, value: data.experience.length, label: language === 'ar' ? 'خبرة' : 'Exp' },
-          { icon: <Award size={14} style={{ color: primaryColor }} />, value: data.certifications.length, label: language === 'ar' ? 'شهادة' : 'Certs' },
-          { icon: <Globe2 size={14} style={{ color: primaryColor }} />, value: data.languages.length, label: language === 'ar' ? 'لغة' : 'Langs' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white dark:bg-gray-900 p-2.5 sm:p-3 flex items-center gap-2 justify-center">
-            {stat.icon}
-            <div>
-              <p className="text-sm sm:text-base font-bold">{stat.value}</p>
-              <p className="text-[9px] sm:text-[10px] text-gray-400">{stat.label}</p>
-            </div>
+        {sidebarItems.map((type) => (
+          <div key={type} className="mt-5 pt-4 border-t border-white/20">
+            <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 opacity-70">{sectionLabel(type, language)}</h3>
+            {type === 'skills' && (
+              <div className="space-y-2.5">
+                {data.skills.map((sk) => (
+                  <div key={sk.id}>
+                    <div className="flex justify-between text-[10px] sm:text-xs mb-1"><span>{sk.name}</span><span className="opacity-60">{SKILL_LEVEL_LABELS[language][sk.level]}</span></div>
+                    <div className="h-1.5 rounded-full bg-white/20 overflow-hidden"><div className="h-full rounded-full bg-white/80" style={{ width: getSkillWidth(sk.level) }} /></div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {type === 'certifications' && (
+              <div className="space-y-2">
+                {data.certifications.map((c) => (
+                  <div key={c.id} className="rounded-lg p-2" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                    <div className="text-[10px] sm:text-xs font-semibold">{c.name}</div>
+                    <div className="text-[9px] sm:text-[10px] opacity-70 mt-0.5">{c.issuer}{c.date ? ` · ${c.date}` : ''}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {type === 'languages' && (
+              <div className="space-y-2">
+                {data.languages.map((l) => {
+                  const filled = getLanguageDots(l.level);
+                  return (
+                    <div key={l.id} className="flex items-center gap-2">
+                      <span className="text-[10px] sm:text-xs min-w-[50px]">{l.name}</span>
+                      <div className="flex gap-1">{[1,2,3,4,5].map(d => <div key={d} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: d <= filled ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)' }} />)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>
-            <Shield size={14} />{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-        </div>
-      )}
-
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
-        {sections.map((type) => (
+      {/* Main content */}
+      <div className="flex-1 p-5 sm:p-6 space-y-5">
+        {p.summary && (
+          <div>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3">
+              <Shield size={14} style={{ color: primaryColor }} />
+              {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
+          </div>
+        )}
+        {mainItems.map((type) => (
           <div key={type}>
-            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-2" style={{ color: primaryColor }}>
-              {type === 'experience' ? <Briefcase size={14} /> : type === 'education' ? <GraduationCap size={14} /> : type === 'skills' ? <Zap size={14} /> : type === 'certifications' ? <Award size={14} /> : type === 'languages' ? <Globe2 size={14} /> : <FolderKanban size={14} />}
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3">
+              <span style={{ color: primaryColor }}>{sectionIcon(type)}</span>
               {sectionLabel(type, language)}
             </h2>
-            {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
-             type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
-             renderSection(type, data, primaryColor, language)}
+            {renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1447,56 +1599,63 @@ export function MarketingTemplate({ data, primaryColor, fontFamily, fontSize, la
   const p = data.personalInfo;
 
   return (
-    <div className="w-full max-w-lg mx-auto" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Bold vibrant header */}
-      <div className="relative px-5 sm:px-6 pt-6 sm:pt-8 pb-5 text-white overflow-hidden" style={{ backgroundColor: primaryColor }}>
-        {/* Decorative shapes */}
-        <div className="absolute -top-10 -end-10 w-32 h-32 rounded-full opacity-10 bg-white" />
-        <div className="absolute -bottom-8 -start-8 w-24 h-24 rounded-full opacity-10 bg-white" />
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Vibrant bold header */}
+      <div className="relative px-5 sm:px-8 py-6 sm:py-8 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc, ${darken(primaryColor, 10)})` }}>
+        {/* Dynamic shapes */}
+        <div className="absolute -bottom-6 w-32 h-32 sm:w-44 sm:h-44 rounded-full opacity-10" style={{ backgroundColor: 'white', [isR ? 'left' : 'right']: '-20px' }} />
+        <div className="absolute -top-4 w-20 h-20 sm:w-28 sm:h-28 rounded-full opacity-5" style={{ backgroundColor: 'white', [isR ? 'right' : 'left']: '40px' }} />
         <div className="relative">
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-4 sm:gap-5">
             {p.photo && (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-white/30 shrink-0 rotate-3">
-                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              <div className="shrink-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 shadow-lg rotate-3" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>
+                  <img src={p.photo} alt="" className="w-full h-full object-cover" />
+                </div>
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-xl font-extrabold">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-              <p className="text-xs sm:text-sm font-semibold mt-0.5 opacity-90">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+              <p className="text-sm sm:text-base font-medium mt-1 opacity-90">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
-            {p.email && <span className="flex items-center gap-1"><Mail size={10} />{p.email}</span>}
-            {p.phone && <span className="flex items-center gap-1"><Phone size={10} />{p.phone}</span>}
-            {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={10} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-4 text-[10px] sm:text-xs opacity-85">
+            {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
+            {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
+            {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+            {p.website && <span className="flex items-center gap-1"><Globe size={11} />{p.website}</span>}
+            {p.linkedin && <span className="flex items-center gap-1"><Linkedin size={11} />{p.linkedin}</span>}
           </div>
         </div>
       </div>
 
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="text-sm sm:text-base font-extrabold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>
-            <TrendingUp size={14} className="inline me-1" />{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+            <Target size={14} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
           </h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-4 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <div key={type} className="rounded-xl p-3 sm:p-4 border-2" style={{ borderColor: primaryColor + '15' }}>
-            <h2 className="text-sm sm:text-base font-extrabold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold mb-3" style={{ color: primaryColor }}>
+              <span>{sectionIcon(type)}</span>
               {sectionLabel(type, language)}
             </h2>
             {type === 'skills' ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {data.skills.map((sk) => (
-                  <span key={sk.id} className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc)` }}>
+                  <span key={sk.id} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}bb)` }}>
                     {sk.name}
                   </span>
                 ))}
               </div>
-            ) : renderSection(type, data, primaryColor, language)}
+            ) : type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+             renderSection(type, data, primaryColor, language)}
           </div>
         ))}
       </div>
@@ -1505,51 +1664,62 @@ export function MarketingTemplate({ data, primaryColor, fontFamily, fontSize, la
 }
 
 /* ============================================================================ */
-/*   20. FINANCE TEMPLATE - "المالية"                                          */
+/*   20. FINANCE TEMPLATE - "المالي"                                           */
 /* ============================================================================ */
 
 export function FinanceTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
+  const yrs = computeYears(data.experience);
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-[#0c1929] text-white" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Conservative prestigious header */}
-      <div className="px-5 sm:px-6 pt-6 sm:pt-8 pb-4 border-b-2" style={{ borderColor: primaryColor + '40' }}>
-        <div className="flex items-center gap-3 sm:gap-4">
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Dark conservative header */}
+      <div className="px-5 sm:px-8 py-5 sm:py-6 text-white" style={{ background: `linear-gradient(135deg, #1a1a2e, #16213e)` }}>
+        <div className="flex items-center gap-4 sm:gap-5">
           {p.photo && (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded overflow-hidden shrink-0" style={{ border: `2px solid ${primaryColor}50` }}>
-              <img src={p.photo} alt="" className="w-full h-full object-cover" />
+            <div className="shrink-0">
+              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full overflow-hidden border-2" style={{ borderColor: primaryColor + '60' }}>
+                <img src={p.photo} alt="" className="w-full h-full object-cover" />
+              </div>
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
-            <p className="text-xs sm:text-sm font-medium mt-0.5 tracking-wider uppercase" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-sm sm:text-base font-medium mt-1" style={{ color: primaryColor }}>{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
+              {p.email && <span className="flex items-center gap-1"><Mail size={11} style={{ color: primaryColor + '80' }} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={11} style={{ color: primaryColor + '80' }} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} style={{ color: primaryColor + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+              {p.linkedin && <span className="flex items-center gap-1"><Linkedin size={11} style={{ color: primaryColor + '80' }} />{p.linkedin}</span>}
+            </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[10px] sm:text-xs text-gray-400">
-          {p.email && <span>{p.email}</span>}
-          {p.phone && <span>{p.phone}</span>}
-          {(p.city || p.country) && <span>{[p.city, p.country].filter(Boolean).join(', ')}</span>}
-          {p.linkedin && <span>{p.linkedin}</span>}
+        {/* Key metrics */}
+        <div className="flex gap-4 sm:gap-6 mt-5 pt-4 border-t border-white/10">
+          {yrs > 0 && <div><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{yrs}+</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'سنوات خبرة' : 'Years Exp'}</div></div>}
+          {data.experience.length > 0 && <div><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{data.experience.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'وظائف' : 'Positions'}</div></div>}
+          {data.certifications.length > 0 && <div><div className="text-base sm:text-lg font-extrabold" style={{ color: primaryColor }}>{data.certifications.length}</div><div className="text-[9px] sm:text-[10px] text-gray-500 uppercase">{language === 'ar' ? 'شهادات' : 'Certifications'}</div></div>}
         </div>
       </div>
+      <div className="h-1" style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}60, transparent)` }} />
 
       {p.summary && (
-        <div className="px-5 sm:px-6 pt-4">
-          <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2" style={{ color: primaryColor }}>
-            <BarChart3 size={14} className="inline me-1" />{language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3">
+            <BarChart3 size={14} style={{ color: primaryColor }} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
           </h2>
-          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line">{p.summary}</p>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-3 pt-3">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
         {sections.map((type) => (
-          <div key={type} className="rounded-lg p-3 sm:p-4 border" style={{ borderColor: primaryColor + '20', backgroundColor: 'rgba(255,255,255,0.03)' }}>
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: primaryColor }}>
-              {type === 'experience' ? <Briefcase size={12} /> : type === 'education' ? <GraduationCap size={12} /> : type === 'skills' ? <Target size={12} /> : type === 'certifications' ? <Award size={12} /> : type === 'languages' ? <Globe2 size={12} /> : <FolderKanban size={12} />}
+          <div key={type}>
+            <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-3 pb-2 border-b" style={{ borderColor: primaryColor + '20' }}>
+              <span style={{ color: primaryColor }}>{sectionIcon(type)}</span>
               {sectionLabel(type, language)}
             </h2>
             {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
@@ -1563,324 +1733,138 @@ export function FinanceTemplate({ data, primaryColor, fontFamily, fontSize, lang
 }
 
 /* ============================================================================ */
-/*   21. AAFIATAK PRO TEMPLATE - "عافيتك برو"                                  */
+/*   21. AAFIATAK PRO TEMPLATE - "عافية تك برو"                                */
 /* ============================================================================ */
 
 export function AafiatakProTemplate({ data, primaryColor, fontFamily, fontSize, language }: TemplateProps) {
   const isR = isRtl(language);
   const sections = getVisibleSections(data.sections);
   const p = data.personalInfo;
-  const yearsExp = computeYears(data.experience);
-  const completedJobs = data.experience.length;
-  const skillCount = data.skills.length;
-
-  const SKILL_PERCENT: Record<SkillLevel, number> = { beginner: 25, intermediate: 50, advanced: 75, expert: 100 };
-
-  function skillBarColor(level: SkillLevel, color: string) {
-    if (level === 'expert') return color;
-    if (level === 'advanced') return color + 'cc';
-    if (level === 'intermediate') return color + '99';
-    return '#94a3b8';
-  }
-
-  function skillBadgeStyle(level: SkillLevel, color: string) {
-    if (level === 'expert') return { bg: color + '15', text: color };
-    if (level === 'advanced') return { bg: color + '10', text: color + 'cc' };
-    if (level === 'intermediate') return { bg: '#e0f2fe', text: '#0284c7' };
-    return { bg: '#f1f5f9', text: '#64748b' };
-  }
-
-  function langDotColor(level: LanguageLevel, color: string): { filled: string; empty: string } {
-    if (level === 'native' || level === 'fluent') return { filled: color, empty: color + '20' };
-    if (level === 'advanced') return { filled: color + 'cc', empty: color + '15' };
-    if (level === 'intermediate') return { filled: '#38bdf8', empty: '#38bdf820' };
-    return { filled: '#94a3b8', empty: '#94a3b820' };
-  }
-
-  function langBadgeStyle(level: LanguageLevel, color: string): { bg: string; text: string } {
-    if (level === 'native') return { bg: color + '15', text: color };
-    if (level === 'fluent') return { bg: '#d1fae5', text: '#059669' };
-    if (level === 'advanced') return { bg: color + '10', text: color + 'cc' };
-    if (level === 'intermediate') return { bg: '#fef3c7', text: '#d97706' };
-    return { bg: '#f1f5f9', text: '#64748b' };
-  }
-
-  const skillLabels = language === 'ar' ? { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم', expert: 'خبير' } : { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced', expert: 'Expert' };
-  const langLabels = language === 'ar' ? { native: 'لغة أم', fluent: 'فصيح', advanced: 'متقدم', intermediate: 'متوسط', basic: 'أساسي' } : { native: 'Native', fluent: 'Fluent', advanced: 'Advanced', intermediate: 'Intermediate', basic: 'Basic' };
-  const degreeLabels = language === 'ar' ? { high_school: 'ثانوية', diploma: 'دبلوم', bachelor: 'بكالوريوس', master: 'ماجستير', phd: 'دكتوراه', other: 'أخرى' } : { high_school: 'High School', diploma: 'Diploma', bachelor: 'Bachelor', master: 'Master', phd: 'PhD', other: 'Other' };
-
-  const cardClass = "rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm";
+  const yrs = computeYears(data.experience);
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-3 sm:space-y-4 pb-6" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
-      {/* Profile Header */}
-      <div className={cardClass}>
-        <div className="relative h-20 sm:h-28" style={{ background: `linear-gradient(135deg, ${primaryColor}30, ${primaryColor}15, transparent)` }}>
-          <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at top left, ${primaryColor}20, transparent 70%)` }} />
-        </div>
-        <div className="relative px-4 sm:px-5 pb-4 sm:pb-5 -mt-12 sm:-mt-14">
-          {/* Avatar */}
-          <div className="flex flex-col items-center text-center">
-            <div className="relative mb-2 sm:mb-3">
-              <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}80, ${primaryColor}40)` }}>
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-3 sm:border-4 border-white dark:border-gray-900 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-800">
-                  {p.photo ? (
-                    <img src={p.photo} alt={p.fullName} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xl sm:text-2xl font-bold" style={{ color: primaryColor }}>
-                      {p.fullName ? p.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) : '?'}
-                    </span>
-                  )}
+    <div className="w-full" dir={isR ? 'rtl' : 'ltr'} style={{ fontFamily: resolveFont(fontFamily) }}>
+      {/* Premium gradient banner */}
+      <div className="relative px-5 sm:px-8 py-5 sm:py-7 text-white overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${darken(primaryColor, 15)})` }}>
+        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 30% 40%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        <div className="flex items-center gap-4 sm:gap-5 relative">
+          {p.photo && (
+            <div className="shrink-0">
+              <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(135deg, white, ${primaryColor}60)` }}>
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/30 shadow-lg">
+                  <img src={p.photo} alt="" className="w-full h-full object-cover" />
                 </div>
               </div>
             </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-wide">{p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}</h1>
+            <p className="text-sm sm:text-base font-medium opacity-90 mt-1">{p.jobTitle || (language === 'ar' ? 'المسمى الوظيفي' : 'Job Title')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] sm:text-xs opacity-85">
+              {p.email && <span className="flex items-center gap-1"><Mail size={11} />{p.email}</span>}
+              {p.phone && <span className="flex items-center gap-1"><Phone size={11} />{p.phone}</span>}
+              {(p.city || p.country) && <span className="flex items-center gap-1"><MapPin size={11} />{[p.city, p.country].filter(Boolean).join(', ')}</span>}
+              {p.website && <span className="flex items-center gap-1"><Globe size={11} />{p.website}</span>}
+              {p.linkedin && <span className="flex items-center gap-1"><Linkedin size={11} />{p.linkedin}</span>}
+              {p.github && <span className="flex items-center gap-1"><Github size={11} />{p.github}</span>}
+            </div>
           </div>
+        </div>
 
-          {/* Name + Title */}
-          <div className="text-center mb-2 sm:mb-3">
-            <h1 className="text-lg sm:text-xl font-bold flex items-center justify-center gap-1.5">
-              {p.fullName || (language === 'ar' ? 'الاسم الكامل' : 'Full Name')}
-            </h1>
-            {p.jobTitle && <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: primaryColor }}>{p.jobTitle}</p>}
-          </div>
-
-          {/* Location + Experience */}
-          <div className="flex items-center justify-center gap-3 sm:gap-4 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">
-            {(p.city || p.country) && (
-              <span className="flex items-center gap-1"><MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: primaryColor + '80' }} />{[p.city, p.country].filter(Boolean).join(', ')}</span>
-            )}
-            {yearsExp > 0 && (
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: primaryColor + '80' }} />{yearsExp} {language === 'ar' ? 'سنة خبرة' : 'years exp'}</span>
-            )}
-          </div>
-
-          {/* Quick badges */}
-          <div className="flex flex-wrap justify-center gap-1 sm:gap-1.5">
-            {completedJobs > 0 && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{completedJobs} {language === 'ar' ? 'خبرة' : 'exp'}
-              </span>
-            )}
-            {skillCount > 0 && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-sky-500/10 text-sky-600 dark:text-sky-400">
-                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{skillCount} {language === 'ar' ? 'مهارة' : 'skills'}
-              </span>
-            )}
-            {data.languages.length > 0 && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <Globe2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{data.languages.length} {language === 'ar' ? 'لغة' : 'lang'}
-              </span>
-            )}
-          </div>
+        {/* Stats grid */}
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 mt-5 pt-4 border-t border-white/20 relative">
+          {yrs > 0 && <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{yrs}+</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'سنوات' : 'Years'}</div></div>}
+          <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{data.experience.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'وظائف' : 'Jobs'}</div></div>
+          <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{data.skills.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'مهارات' : 'Skills'}</div></div>
+          <div className="text-center rounded-lg py-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}><div className="text-base sm:text-lg font-extrabold">{data.certifications.length}</div><div className="text-[8px] sm:text-[10px] uppercase tracking-wider opacity-70">{language === 'ar' ? 'شهادات' : 'Certs'}</div></div>
         </div>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        {[
-          { icon: <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />, value: completedJobs, label: language === 'ar' ? 'خبرة عملية' : 'Work Exp', bg: 'bg-emerald-500/10' },
-          { icon: <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />, value: skillCount, label: language === 'ar' ? 'مهارة' : 'Skills', bg: 'bg-amber-500/10' },
-          { icon: <Clock className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: primaryColor }} />, value: yearsExp, label: language === 'ar' ? 'سنة خبرة' : 'Years Exp', bg: '', customBg: primaryColor + '10' },
-          { icon: <Award className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-violet-400" />, value: data.certifications.length, label: language === 'ar' ? 'شهادة' : 'Certs', bg: 'bg-violet-500/10' },
-        ].map((stat, i) => (
-          <div key={i} className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-3 sm:p-4 shadow-sm">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className={`${stat.bg} w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0`} style={stat.customBg ? { backgroundColor: stat.customBg } : undefined}>
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-base sm:text-xl font-bold">{stat.value}</p>
-                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Summary */}
       {p.summary && (
-        <div className={cardClass}>
-          <SectionHeader icon={<User size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'نبذة مهنية' : 'Professional Summary'} />
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
-          </div>
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>
+            <User size={14} style={{ color: primaryColor }} />
+            {language === 'ar' ? 'نبذة احترافية' : 'Professional Summary'}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{p.summary}</p>
         </div>
       )}
 
-      {/* Skills */}
-      {data.skills.length > 0 && (
-        <div className={cardClass}>
-          <SectionHeader icon={<Sparkles size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'المهارات' : 'Skills'} />
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
-            {data.skills.map((sk) => {
-              const badgeStyle = skillBadgeStyle(sk.level, primaryColor);
-              return (
-                <div key={sk.id} className="space-y-1 sm:space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs sm:text-sm font-medium">{sk.name}</span>
-                    <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}>{skillLabels[sk.level]}</span>
-                  </div>
-                  <div className="h-1.5 sm:h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ backgroundColor: skillBarColor(sk.level, primaryColor), width: `${SKILL_PERCENT[sk.level]}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Experience */}
-      {data.experience.length > 0 && (
-        <div className={cardClass}>
-          <SectionHeader icon={<Briefcase size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'الخبرات العملية' : 'Work Experience'} />
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
-            <div className="relative">
-              <div className="absolute top-2 bottom-2 w-[2px]" style={{ backgroundColor: primaryColor + '20', ...(isR ? { right: '7px' } : { left: '7px' }) }} />
-              <div className="space-y-4 sm:space-y-5">
-                {data.experience.map((exp, index) => (
-                  <div key={exp.id} className="relative" style={{ ...(isR ? { paddingRight: 24 } : { paddingLeft: 24 }) }}>
-                    <div className="absolute top-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-[3px] border-white dark:border-gray-900" style={{ backgroundColor: index === 0 ? primaryColor : primaryColor + '40', ...(isR ? { right: 0 } : { left: 0 }), zIndex: 1 }} />
-                    <div className="space-y-1 sm:space-y-1.5">
-                      {exp.jobTitle && <h4 className="text-xs sm:text-sm font-semibold">{exp.jobTitle}</h4>}
-                      {exp.company && (
-                        <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-                          <Building2 className="w-3 h-3" style={{ color: primaryColor + '70' }} /><span>{exp.company}</span>
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-5 pt-4">
+        {sections.map((type) => {
+          /* Timeline style for experience */
+          if (type === 'experience' && data.experience.length > 0) {
+            return (
+              <div key={type}>
+                <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-4" style={{ color: primaryColor }}>
+                  <Briefcase size={14} style={{ color: primaryColor }} />
+                  {sectionLabel(type, language)}
+                </h2>
+                <div className="relative ps-5 border-s-2" style={{ borderInlineStartColor: primaryColor + '30' }}>
+                  {data.experience.map((exp, idx) => (
+                    <div key={exp.id} className={`relative ${idx < data.experience.length - 1 ? 'pb-4 mb-4 border-b border-gray-100 dark:border-gray-800' : ''}`}>
+                      {/* Timeline dot */}
+                      <div className="absolute w-3 h-3 rounded-full border-2 -translate-y-0.5" style={{ ...(isR ? { right: '-21px' } : { left: '-21px' }), backgroundColor: 'white', borderColor: primaryColor }} />
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 sm:gap-2">
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-bold">{exp.jobTitle}</h4>
+                          <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-500">
+                            <Building2 size={12} style={{ color: primaryColor + '80' }} />
+                            <span>{exp.company}</span>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-gray-400">
-                        <Calendar className="w-3 h-3" /><span>{formatDateRange(exp.startDate, exp.endDate, exp.current, language)}</span>
+                        <span className="text-[10px] sm:text-xs text-gray-400 shrink-0 flex items-center gap-1">
+                          <Calendar size={10} />{formatDateRange(exp.startDate, exp.endDate, exp.current, language)}
+                        </span>
                       </div>
-                      {exp.description && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-1 sm:mt-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2 whitespace-pre-line">{exp.description}</p>}
+                      {exp.description && (
+                        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1.5 whitespace-pre-line leading-relaxed">{exp.description}</p>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+            );
+          }
+
+          return (
+            <div key={type}>
+              <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold uppercase tracking-wider mb-3" style={{ color: primaryColor }}>
+                <span style={{ color: primaryColor }}>{sectionIcon(type)}</span>
+                {sectionLabel(type, language)}
+              </h2>
+              {type === 'skills' ? <SkillBars data={data} color={primaryColor} lang={language} /> :
+               type === 'languages' ? <LanguageDots data={data} color={primaryColor} lang={language} /> :
+               type === 'projects' ? (
+                 <div className="space-y-2 sm:space-y-3">
+                   {data.projects.map((proj) => (
+                     <div key={proj.id} className="rounded-xl border p-3 sm:p-4" style={{ borderColor: primaryColor + '20', backgroundColor: primaryColor + '06' }}>
+                       <div className="flex items-start justify-between gap-2">
+                         <h4 className="text-xs sm:text-sm font-bold">{proj.name}</h4>
+                         {proj.url && <ExternalLink size={12} style={{ color: primaryColor }} className="shrink-0" />}
+                       </div>
+                       {proj.description && <p className="text-[11px] sm:text-xs text-gray-500 mt-1.5 leading-relaxed">{proj.description}</p>}
+                       {proj.technologies.length > 0 && (
+                         <div className="flex flex-wrap gap-1 mt-2">
+                           {proj.technologies.map((t) => (
+                             <span key={t} className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-medium text-white" style={{ backgroundColor: primaryColor + '90' }}>{t}</span>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   ))}
+                 </div>
+               ) : renderSection(type, data, primaryColor, language)}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Education */}
-      {data.education.length > 0 && (
-        <div className={cardClass}>
-          <SectionHeader icon={<GraduationCap size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'المؤهلات التعليمية' : 'Education'} />
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
-            {data.education.map((edu) => (
-              <div key={edu.id} className="pb-2.5 sm:pb-3 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-semibold">{edu.major}</h4>
-                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">{edu.institution}</p>
-                    {edu.degree && (
-                      <span className="inline-block text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-medium mt-1" style={{ backgroundColor: primaryColor + '10', color: primaryColor }}>
-                        {degreeLabels[edu.degree as keyof typeof degreeLabels] || edu.degree}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[9px] sm:text-[10px] text-gray-400 shrink-0">{edu.startDate}{edu.endDate ? ` - ${edu.endDate}` : ''}</span>
-                </div>
-                {edu.description && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">{edu.description}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Certifications */}
-      {data.certifications.length > 0 && (
-        <div className={cardClass}>
-          <SectionHeader icon={<Award size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'الشهادات والدورات' : 'Certifications'} />
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              {data.certifications.map((cert) => (
-                <div key={cert.id} className="rounded-lg sm:rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3 sm:p-3.5 space-y-1.5 sm:space-y-2">
-                  <h4 className="text-xs sm:text-sm font-semibold leading-tight">{cert.name}</h4>
-                  {cert.issuer && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">{cert.issuer}</p>}
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold bg-amber-500/10 text-amber-600">{language === 'ar' ? 'شهادة' : 'Cert'}</span>
-                    {cert.date && <span className="text-[9px] sm:text-[10px] text-gray-400">{cert.date}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Languages */}
-      {data.languages.length > 0 && (
-        <div className={cardClass}>
-          <SectionHeader icon={<Globe2 size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'اللغات' : 'Languages'} />
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2.5 sm:space-y-3">
-            {data.languages.map((lang) => {
-              const dots = getLanguageDots(lang.level);
-              const dotColors = langDotColor(lang.level, primaryColor);
-              const badge = langBadgeStyle(lang.level, primaryColor);
-              return (
-                <div key={lang.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-xs sm:text-sm font-medium">{lang.name}</span>
-                    <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: badge.bg, color: badge.text }}>{langLabels[lang.level]}</span>
-                  </div>
-                  <div className="flex gap-0.5 sm:gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: i < dots ? dotColors.filled : dotColors.empty }} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Projects */}
-      {data.projects.length > 0 && (
-        <div className={cardClass}>
-          <SectionHeader icon={<FolderKanban size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'المشاريع' : 'Projects'} />
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3 space-y-2 sm:space-y-3">
-            {data.projects.map((proj) => (
-              <div key={proj.id} className="rounded-lg sm:rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3 sm:p-3.5">
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-xs sm:text-sm font-semibold">{proj.name}</h4>
-                  {proj.url && <ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400 shrink-0" />}
-                </div>
-                {proj.description && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 sm:mt-1.5 leading-relaxed">{proj.description}</p>}
-                {proj.technologies.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1.5 sm:mt-2">
-                    {proj.technologies.map((tech) => (
-                      <span key={tech} className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: primaryColor + '10', color: primaryColor + 'cc' }}>{tech}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Contact */}
-      {(p.email || p.phone || p.website || p.linkedin || p.github) && (
-        <div className={cardClass}>
-          <SectionHeader icon={<Phone size={12} style={{ color: primaryColor }} />} title={language === 'ar' ? 'معلومات التواصل' : 'Contact'} />
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 sm:pt-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
-              {p.email && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span className="truncate">{p.email}</span></div>}
-              {p.phone && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span>{p.phone}</span></div>}
-              {p.website && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span className="truncate">{p.website}</span></div>}
-              {p.linkedin && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span className="truncate">{p.linkedin}</span></div>}
-              {p.github && <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400"><Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: primaryColor + '70' }} /><span className="truncate">{p.github}</span></div>}
-            </div>
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 /* ============================================================================ */
-/*   Template Registry                                                          */
+/*   Template Selector                                                          */
 /* ============================================================================ */
 
 export function getTemplateComponent(slug: string): React.ComponentType<TemplateProps> {

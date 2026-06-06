@@ -42,6 +42,11 @@ interface ExportDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** A4 width in pixels at 96 DPI: 210mm * 96 / 25.4 ≈ 794px */
+const A4_WIDTH_PX = 794;
+/** Letter width in pixels at 96 DPI: 215.9mm * 96 / 25.4 ≈ 816px */
+const LETTER_WIDTH_PX = 816;
+
 /**
  * Safely capture a DOM element as a canvas.
  * Uses html-to-image first (supports modern CSS), falls back to html2canvas.
@@ -158,6 +163,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     try {
       setProgress(5);
 
+      // Determine the A4-correct width for this paper size
+      const targetWidthPx = paperSize === 'a4' ? A4_WIDTH_PX : LETTER_WIDTH_PX;
+
       // ===== Step 1: Find or create the preview element to capture =====
       let captureTarget: HTMLElement | null = null;
       let parentWithTransform: HTMLElement | null = null;
@@ -180,6 +188,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             parentWithTransform.style.transform = 'none';
             parentWithTransform.style.transformOrigin = 'top left';
           }
+
+          // Force the capture target to A4 width so it fills the PDF page correctly
+          captureTarget.style.width = `${targetWidthPx}px`;
+          captureTarget.style.maxWidth = `${targetWidthPx}px`;
+          captureTarget.style.margin = '0';
+          captureTarget.style.boxSizing = 'border-box';
         }
       }
 
@@ -189,11 +203,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
         tempContainer = document.createElement('div');
         tempContainer.id = 'export-temp-container';
+        // Use exact A4 width so the rendered output matches the PDF page width perfectly
         tempContainer.style.cssText = [
           'position: fixed',
           'left: 0',
           'top: 0',
-          'width: 800px',
+          `width: ${targetWidthPx}px`,
           'z-index: -9999',
           'opacity: 1',
           'pointer-events: none',
@@ -251,10 +266,17 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         throw new Error(language === 'ar' ? 'فشل في التقاط الصورة' : 'Capture produced empty result');
       }
 
-      // Restore parent transform
+      // Restore parent transform and width
       if (parentWithTransform) {
         parentWithTransform.style.transform = savedTransform;
         parentWithTransform.style.transformOrigin = savedTransformOrigin;
+      }
+      // Reset width overrides on the preview element
+      if (existingPreview) {
+        existingPreview.style.width = '';
+        existingPreview.style.maxWidth = '';
+        existingPreview.style.margin = '';
+        existingPreview.style.boxSizing = '';
       }
 
       // ===== Step 3: Export in chosen format =====
@@ -269,16 +291,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         const pdfWidth = paperSize === 'a4' ? 210 : 215.9;
         const pdfHeight = paperSize === 'a4' ? 297 : 279.4;
 
-        // Margins in mm for professional look
-        const marginTop = 0;
-        const marginBottom = 0;
-        const marginLeft = 0;
-        const marginRight = 0;
-        const contentWidth = pdfWidth - marginLeft - marginRight;
-        const contentHeight = pdfHeight - marginTop - marginBottom;
+        // No margins - content fills the entire page
+        const contentWidth = pdfWidth;
+        const contentHeight = pdfHeight;
 
         // Calculate how the image maps to the PDF
-        const actualWidth = imgWidth / 2; // divide by 2 (scale:2)
+        // The canvas was captured at scale=2, so actualWidth = imgWidth / 2
+        const actualWidth = imgWidth / 2;
         const scaleRatio = contentWidth / actualWidth;
         const totalScaledHeight = (imgHeight / 2) * scaleRatio;
 
@@ -289,9 +308,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         });
 
         if (totalScaledHeight <= contentHeight) {
-          // Single page - simple case
+          // Single page - center vertically if content is shorter than page
+          const yOffset = Math.max(0, (contentHeight - totalScaledHeight) / 2);
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
-          pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, contentWidth, totalScaledHeight);
+          pdf.addImage(imgData, 'JPEG', 0, yOffset, contentWidth, totalScaledHeight);
         } else {
           // Multi-page PDF with smart page breaks
           const pageCanvas = document.createElement('canvas');
@@ -306,15 +326,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
           while (currentY < imgHeight) {
             // Calculate ideal slice height for this page
-            let sliceHeight: number;
-
-            if (pageNum === 0) {
-              // First page: use full content height
-              sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
-            } else {
-              // Subsequent pages: same height
-              sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
-            }
+            let sliceHeight = Math.min(pageHeightPixels, imgHeight - currentY);
 
             // For all pages except the last, find a safe break point
             if (currentY + sliceHeight < imgHeight) {
@@ -345,9 +357,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
             if (pageNum > 0) pdf.addPage();
 
-            // Add image filling the full page width
-            const yOffset = pageNum === 0 ? marginTop : marginTop;
-            pdf.addImage(pageImgData, 'JPEG', marginLeft, yOffset, contentWidth, pageScaledHeight);
+            // Add image filling the full page width, starting from top-left
+            pdf.addImage(pageImgData, 'JPEG', 0, 0, contentWidth, pageScaledHeight);
 
             currentY += sliceHeight;
             pageNum++;

@@ -8,6 +8,13 @@ import {
 } from 'lucide-react';
 import type { ResumeData, SkillLevel, LanguageLevel, DegreeType } from '@/lib/types';
 import { SKILL_LEVEL_LABELS, LANGUAGE_LEVEL_LABELS, DEGREE_LABELS } from '@/lib/types';
+import {
+  AafiatakProTemplate,
+  FounderProTemplate,
+  NurseProTemplate,
+  HealthcareProTemplate,
+  CreativeProTemplate,
+} from '@/components/templates/professional';
 
 /* -------------------------------------------------------------------------- */
 /*  Shared Types & Helpers                                                    */
@@ -1678,7 +1685,7 @@ export function getTemplateComponent(slug: string): React.ComponentType<Template
     classic: ClassicTemplate,
     modern: ModernTemplate,
     executive: ExecutiveTemplate,
-    creative: CreativeTemplate,
+    creative: CreativeProTemplate,
     minimal: MinimalTemplate,
     corporate: CorporateTemplate,
     ats: ATSTemplate,
@@ -1688,11 +1695,11 @@ export function getTemplateComponent(slug: string): React.ComponentType<Template
     elegant: ElegantTemplate,
     premiumdark: PremiumDarkTemplate,
     luxury: LuxuryTemplate,
-    startup: StartupTemplate,
+    startup: FounderProTemplate,
     consultant: ConsultantTemplate,
     software: SoftwareTemplate,
-    nurse: NurseTemplate,
-    healthcare: HealthcareTemplate,
+    nurse: NurseProTemplate,
+    healthcare: HealthcareProTemplate,
     marketing: MarketingTemplate,
     finance: FinanceTemplate,
     aafiatakpro: AafiatakProTemplate,

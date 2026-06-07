@@ -186,6 +186,7 @@ export const TEMPLATES: TemplateInfo[] = [
   { id: 'marketing', name: 'Marketing Expert', nameAr: 'خبير تسويق', slug: 'marketing', category: 'industry', categoryAr: 'صناعي', description: 'For marketing experts', descriptionAr: 'لخبراء التسويق', isPremium: false, colors: ['#EA580C', '#C2410C', '#9A3412'], preview: '' },
   { id: 'finance', name: 'Finance Expert', nameAr: 'خبير مالي', slug: 'finance', category: 'professional', categoryAr: 'احترافي', description: 'For finance professionals', descriptionAr: 'للمهنيين الماليين', isPremium: false, colors: ['#1E293B', '#334155', '#475569'], preview: '' },
   { id: 'manager', name: 'Executive Manager', nameAr: 'مدير تنفيذي', slug: 'manager', category: 'professional', categoryAr: 'احترافي', description: 'For executive managers', descriptionAr: 'للمديرين التنفيذيين', isPremium: false, colors: ['#1E3A5F', '#2563EB', '#3B82F6'], preview: '' },
+  { id: 'aafiatakpro', name: 'Aafiatak Pro', nameAr: 'عافيتك برو', slug: 'aafiatakpro', category: 'premium', categoryAr: 'فاخر', description: 'Premium professional design', descriptionAr: 'تصميم احترافي فاخر', isPremium: true, colors: ['#2563EB', '#1D4ED8', '#1E40AF'], preview: '' },
 ];
 
 export const SKILL_LEVEL_LABELS: Record<Language, Record<SkillLevel, string>> = {

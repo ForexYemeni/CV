@@ -7,26 +7,10 @@ import {
   ZoomIn, ZoomOut, Maximize, Minimize,
 } from 'lucide-react';
 import {
-  AafiatakProTemplate, ClassicTemplate, ModernTemplate, ExecutiveTemplate,
-  CreativeTemplate, MinimalTemplate, CorporateTemplate, ATSTemplate,
-  MedicalTemplate, EngineeringTemplate, AcademicTemplate, ElegantTemplate,
-  PremiumDarkTemplate, LuxuryTemplate, StartupTemplate, ConsultantTemplate,
-  SoftwareTemplate, NurseTemplate, HealthcareTemplate, MarketingTemplate,
-  FinanceTemplate,
+  getTemplateComponent,
 } from '@/components/templates';
 import type { TemplateProps } from '@/components/templates';
 import { ProfessionalCVPreview } from './ProfessionalCVPreview';
-
-const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
-  classic: ClassicTemplate, modern: ModernTemplate,
-  executive: ExecutiveTemplate, creative: CreativeTemplate, minimal: MinimalTemplate,
-  corporate: CorporateTemplate, ats: ATSTemplate, medical: MedicalTemplate,
-  engineering: EngineeringTemplate, academic: AcademicTemplate, elegant: ElegantTemplate,
-  premiumdark: PremiumDarkTemplate, luxury: LuxuryTemplate, startup: StartupTemplate,
-  consultant: ConsultantTemplate, software: SoftwareTemplate, nurse: NurseTemplate,
-  healthcare: HealthcareTemplate, marketing: MarketingTemplate, finance: FinanceTemplate,
-  manager: CorporateTemplate,
-};
 
 export function ResumePreview() {
   const language = useAppStore((s) => s.language);
@@ -48,7 +32,7 @@ export function ResumePreview() {
   }
 
   const isAafiatakPro = resume.template === 'aafiatakpro';
-  const TemplateComponent = TEMPLATE_MAP[resume.template];
+  const TemplateComponent = getTemplateComponent(resume.template);
 
   return (
     <div className={`flex flex-col h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>

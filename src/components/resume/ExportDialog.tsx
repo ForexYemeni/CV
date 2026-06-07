@@ -14,29 +14,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Download, FileText, Image, Loader2, FileImage, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  ClassicTemplate, ModernTemplate, ExecutiveTemplate,
-  CreativeTemplate, MinimalTemplate, CorporateTemplate, ATSTemplate,
-  MedicalTemplate, EngineeringTemplate, AcademicTemplate, ElegantTemplate,
-  PremiumDarkTemplate, LuxuryTemplate, StartupTemplate, ConsultantTemplate,
-  SoftwareTemplate, NurseTemplate, HealthcareTemplate, MarketingTemplate,
-  FinanceTemplate,
-} from '@/components/templates';
-import type { TemplateProps } from '@/components/templates';
-import { ProfessionalCVPreview } from './ProfessionalCVPreview';
+import { getTemplateComponent } from '@/components/templates';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
-
-const TEMPLATE_MAP: Record<string, React.ComponentType<TemplateProps>> = {
-  classic: ClassicTemplate, modern: ModernTemplate,
-  executive: ExecutiveTemplate, creative: CreativeTemplate, minimal: MinimalTemplate,
-  corporate: CorporateTemplate, ats: ATSTemplate, medical: MedicalTemplate,
-  engineering: EngineeringTemplate, academic: AcademicTemplate, elegant: ElegantTemplate,
-  premiumdark: PremiumDarkTemplate, luxury: LuxuryTemplate, startup: StartupTemplate,
-  consultant: ConsultantTemplate, software: SoftwareTemplate, nurse: NurseTemplate,
-  healthcare: HealthcareTemplate, marketing: MarketingTemplate, finance: FinanceTemplate,
-  manager: CorporateTemplate,
-};
 
 interface ExportDialogProps {
   open: boolean;
@@ -58,7 +38,7 @@ const PDF_MARGIN_PX = Math.round(PDF_MARGIN_MM * 96 / 25.4); // ≈ 30px
  * Uses html-to-image first (supports modern CSS), falls back to html2canvas.
  */
 async function captureElement(element: HTMLElement, scale: number = 2): Promise<HTMLCanvasElement> {
-  // Attempt 1: html-to-image (SVG foreignObject - browser renders CSS natively)
+  // Attempt 1: html-to-image
   try {
     const { toCanvas } = await import('html-to-image');
     const canvas = await toCanvas(element, {
@@ -104,7 +84,6 @@ async function captureElement(element: HTMLElement, scale: number = 2): Promise<
 
 /**
  * Find a safe Y position to break a page - scans pixel rows for whitespace gaps.
- * Uses a wide search range and scores rows by how "white" they are.
  */
 function findSafeBreakPoint(
   canvas: HTMLCanvasElement,
@@ -124,18 +103,13 @@ function findSafeBreakPoint(
   for (let y = startY; y < endY; y++) {
     const rowData = ctx.getImageData(0, y, width, 1).data;
     let nonWhitePixels = 0;
-    // Sample every 4th pixel for performance
     for (let x = 0; x < width; x += 4) {
       const idx = x * 4;
       const r = rowData[idx], g = rowData[idx + 1], b = rowData[idx + 2];
-      // Count pixels that are NOT near-white
       if (r < 240 || g < 240 || b < 240) {
         nonWhitePixels++;
       }
     }
-
-    // Lower non-white pixel count = better break point (whitespace gap)
-    // Also prefer points closer to the ideal break position
     const distancePenalty = Math.abs(y - idealY) * 0.3;
     const score = nonWhitePixels + distancePenalty;
     if (score < bestScore) {
@@ -175,21 +149,30 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       const contentWidthPx = targetWidthPx - (PDF_MARGIN_PX * 2);
 
       // ===== Step 1: Create a dedicated export container =====
-      // Always use a temp container for reliable, consistent exports
+      // This container is sized exactly to A4 width with proper margins
+      // so the PDF captures a perfectly centered, full-width resume
       tempContainer = document.createElement('div');
       tempContainer.id = 'export-temp-container';
+
+      // Set RTL direction for Arabic content
+      if (isRtl) {
+        tempContainer.setAttribute('dir', 'rtl');
+      }
+
       tempContainer.style.cssText = [
         'position: fixed',
         'left: 0',
         'top: 0',
-        `width: ${contentWidthPx}px`,
+        `width: ${targetWidthPx}px`,
         `padding: ${PDF_MARGIN_PX}px`,
         'z-index: -9999',
         'opacity: 1',
         'pointer-events: none',
         'background-color: #ffffff',
         'overflow: visible',
-        'box-sizing: content-box', // padding adds to the width for total A4 size
+        'box-sizing: border-box',
+        'display: block',
+        ...(isRtl ? ['direction: rtl', 'text-align: right'] : ['direction: ltr', 'text-align: left']),
       ].join(';');
       document.body.appendChild(tempContainer);
 
@@ -198,19 +181,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       tempRoot = createRoot(tempContainer);
 
       // Render the selected template into the export container
-      const isAafiatakPro = resume.template === 'aafiatakpro';
-      const TemplateComponent = TEMPLATE_MAP[resume.template];
+      const TemplateComponent = getTemplateComponent(resume.template);
 
-      if (isAafiatakPro || !TemplateComponent) {
-        tempRoot.render(
-          React.createElement(ProfessionalCVPreview, {
-            data: resume.data,
-            primaryColor: resume.primaryColor,
-            language: resume.language,
-            disableAnimations: true,
-          })
-        );
-      } else {
+      if (TemplateComponent) {
         tempRoot.render(
           React.createElement(TemplateComponent, {
             data: resume.data,
@@ -219,6 +192,16 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             fontSize: resume.fontSize,
             language: resume.language,
           })
+        );
+      } else {
+        // Fallback: render a simple text-based resume
+        tempRoot.render(
+          React.createElement('div', {
+            style: { padding: '20px', fontFamily: 'sans-serif', direction: isRtl ? 'rtl' : 'ltr' },
+          },
+            React.createElement('h1', null, resume.data.personalInfo.fullName || 'Resume'),
+            React.createElement('p', null, resume.data.personalInfo.jobTitle || '')
+          )
         );
       }
 
@@ -243,12 +226,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       setProgress(20);
 
       // Force all max-width constraints to allow full-width rendering
+      // and ensure all elements fill the full content width
       const allElements = tempContainer.querySelectorAll('*');
       allElements.forEach((el) => {
         const htmlEl = el as HTMLElement;
         const computed = window.getComputedStyle(htmlEl);
         const maxW = computed.maxWidth;
-        // If max-width is set and less than content width, override it
         if (maxW && maxW !== 'none') {
           const maxVal = parseFloat(maxW);
           if (!isNaN(maxVal) && maxVal < contentWidthPx) {
@@ -257,11 +240,35 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         }
       });
 
-      let captureTarget: HTMLElement = tempContainer;
-
-      if (!captureTarget) {
-        throw new Error(language === 'ar' ? 'فشل في عرض السيرة الذاتية' : 'Failed to render resume');
+      // CRITICAL: Ensure the root resume element fills the full content width
+      // This fixes RTL content appearing shifted to one side
+      const cvRoot = tempContainer.firstElementChild;
+      if (cvRoot) {
+        const cvEl = cvRoot as HTMLElement;
+        cvEl.style.width = '100%';
+        cvEl.style.maxWidth = '100%';
+        cvEl.style.minWidth = `${contentWidthPx}px`;
+        cvEl.style.marginLeft = '0';
+        cvEl.style.marginRight = '0';
+        cvEl.style.paddingLeft = '0';
+        cvEl.style.paddingRight = '0';
+        cvEl.style.boxSizing = 'border-box';
+        if (isRtl) {
+          cvEl.setAttribute('dir', 'rtl');
+          cvEl.style.direction = 'rtl';
+        }
       }
+
+      // Ensure all card children fill full width
+      const directCards = tempContainer.querySelectorAll('.rounded-2xl, .rounded-xl, [class*="rounded-"]');
+      directCards.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.width = '100%';
+        htmlEl.style.maxWidth = '100%';
+        htmlEl.style.boxSizing = 'border-box';
+      });
+
+      const captureTarget: HTMLElement = tempContainer;
 
       // ===== Step 2: Capture as Canvas =====
       setProgress(30);
@@ -285,8 +292,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         const pdfHeight = paperSize === 'a4' ? 297 : 279.4;
 
         // The canvas was captured at pixelRatio=2, so CSS width = imgWidth / 2
-        // The container was: width=contentWidthPx + padding=PDF_MARGIN_PX on each side
-        // Total container CSS width = contentWidthPx + (PDF_MARGIN_PX * 2) = targetWidthPx
+        // The container was: width=targetWidthPx (border-box, includes padding)
         const actualCssWidth = imgWidth / 2;
 
         // Scale: how many mm per CSS pixel
@@ -302,10 +308,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         });
 
         if (totalContentHeightMm <= pdfHeight) {
-          // Single page - content fits on one page, center vertically
-          const yOffset = Math.max(0, (pdfHeight - totalContentHeightMm) / 2);
+          // Single page - content fills the page width with proper margins
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
-          pdf.addImage(imgData, 'JPEG', 0, yOffset, pdfWidth, totalContentHeightMm);
+          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, totalContentHeightMm);
         } else {
           // Multi-page PDF with smart page breaks
           const pageCanvas = document.createElement('canvas');

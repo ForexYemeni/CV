@@ -15,6 +15,7 @@ import {
   HealthcareProTemplate,
   CreativeProTemplate,
 } from '@/components/templates/professional';
+import { MedicalInfographicProTemplate } from './MedicalInfographicProTemplate';
 
 /* -------------------------------------------------------------------------- */
 /*  Shared Types & Helpers                                                    */
@@ -1637,6 +1638,7 @@ export function getTemplateComponent(slug: string): React.ComponentType<Template
     marketing: MarketingTemplate,
     finance: FinanceTemplate,
     aafiatakpro: AafiatakProTemplate,
+    medicalinfographicpro: MedicalInfographicProTemplate,
     manager: CorporateTemplate,
   };
   return map[slug] || AafiatakProTemplate;

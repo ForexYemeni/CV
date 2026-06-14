@@ -187,6 +187,7 @@ export const TEMPLATES: TemplateInfo[] = [
   { id: 'finance', name: 'Finance Expert', nameAr: 'خبير مالي', slug: 'finance', category: 'professional', categoryAr: 'احترافي', description: 'For finance professionals', descriptionAr: 'للمهنيين الماليين', isPremium: false, colors: ['#1E293B', '#334155', '#475569'], preview: '' },
   { id: 'manager', name: 'Executive Manager', nameAr: 'مدير تنفيذي', slug: 'manager', category: 'professional', categoryAr: 'احترافي', description: 'For executive managers', descriptionAr: 'للمديرين التنفيذيين', isPremium: false, colors: ['#1E3A5F', '#2563EB', '#3B82F6'], preview: '' },
   { id: 'aafiatakpro', name: 'Aafiatak Pro', nameAr: 'عافيتك برو', slug: 'aafiatakpro', category: 'premium', categoryAr: 'فاخر', description: 'Premium professional design', descriptionAr: 'تصميم احترافي فاخر', isPremium: true, colors: ['#2563EB', '#1D4ED8', '#1E40AF'], preview: '' },
+  { id: 'medicalinfographicpro', name: 'Medical Infographic Pro', nameAr: 'إنفوجرافيك طبي برو', slug: 'medicalinfographicpro', category: 'premium', categoryAr: 'فاخر', description: 'Premium medical infographic resume with sidebar', descriptionAr: 'سيرة ذاتية إنفوجرافيك طبية فاخرة بشريط جانبي', isPremium: true, colors: ['#0F4C81', '#1E88E5', '#42A5F5'], preview: '' },
 ];
 
 export const SKILL_LEVEL_LABELS: Record<Language, Record<SkillLevel, string>> = {
